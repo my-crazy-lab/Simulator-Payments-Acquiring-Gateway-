@@ -2,7 +2,72 @@
 
 ## Overview
 
-A production-grade PCI DSS compliant payment acquiring gateway that handles card transactions, tokenization, fraud mitigation, 3D Secure authentication, and settlement processing. This system simulates real-world payment processing challenges including high throughput, security compliance, and external PSP integration.
+PCI DSS compliant: Tuân thủ tiêu chuẩn bảo mật quốc tế cho ngành thẻ (PCI DSS – Payment Card Industry Data Security Standard).
+Nghĩa là hệ thống phải:
+  Mã hóa dữ liệu thẻ
+  Bảo vệ network
+  Giới hạn truy cập
+  Kiểm tra log & audit trail
+  Không tự lưu PAN, CVV dạng raw…
+
+Payment acquiring gateway
+Là cổng xử lý giao dịch thẻ cho merchant (website/app bán hàng).
+Nhiệm vụ:
+  Nhận thông tin thẻ từ người dùng
+  Gửi đến ngân hàng/PSP để xin authorization
+  Trả kết quả thành công/thất bại cho merchant.
+
+Handles card transactions
+Hệ thống phải xử lý đầy đủ flow của giao dịch thẻ:
+  Authorization (kiểm tra số dư, cấp phép thanh toán)
+  Capture (ghi nợ thực sự)
+  Void
+  Refund
+
+Tokenization
+Thay vì lưu số thẻ thật (PAN), hệ thống tạo token đại diện cho thẻ.
+Mục tiêu:
+  Tăng bảo mật
+  Hệ thống nội bộ không cần động vào dữ liệu nhạy cảm
+  Reuse token cho thanh toán sau (one-click payment)
+  VD: 409853****** → TOKEN=abc123xyz
+
+Fraud mitigation
+Hệ thống phải ngăn chặn gian lận thẻ bằng:
+  Tự động đánh giá rủi ro (rules engine)
+  Check velocity (quá nhiều giao dịch trong phút)
+  Check blacklist/whitelist
+  3DS requirement với giao dịch đáng ngờ
+  Tích hợp dịch vụ fraud external như:
+    Sift
+    ThreatMetrix
+    ClearSale
+    Visa/MC fraud tools
+
+3D Secure authentication (3DS1 / 3DS2)
+Đây là lớp xác thực bổ sung (OTP, banking app, biometrics).
+Mục đích giảm chargeback & gian lận.
+Hệ thống phải làm:
+  Redirect user sang ACS ngân hàng
+  Nhận kết quả challenge
+  Mapping PARes / ARes / CRes message (3DS2)
+  Gửi kết quả về PSP/acquirer
+
+Settlement processing
+Settlement là bước cuối cùng: ngân hàng thanh toán tiền cho merchant.
+Hệ thống cần:
+  Tự động tổng hợp các giao dịch đã capture
+  Gửi settlement file cho acquirer
+  Xử lý reconciliation (đối soát)
+  Ghi nhận lệch/chargeback/ dispute
+
+Hệ thống phải tích hợp với:
+  Ngân hàng acquirer
+  Visa / Mastercard networks
+  Payment service providers (Stripe, Adyen, Braintree, CyberSource…)
+  Fraud services
+Flow chính:
+  Merchant → Gateway → PSP → Card Network → Issuer → PSP → Gateway → Merchant
 
 ## Architecture
 
@@ -79,21 +144,20 @@ graph TB
 
 ## Core Features
 
-### ✅ Implemented Features
+### Functinal
 
 - [x] **PCI DSS Compliance**: Secure card data handling with tokenization
 - [x] **Card Tokenization**: PAN tokenization with format-preserving encryption
 - [x] **Fraud Detection**: Real-time ML-based fraud scoring
 - [x] **3D Secure Flow**: Complete 3DS 2.0 authentication workflow
 - [x] **Multi-PSP Routing**: Intelligent routing to multiple payment providers
-- [x] **Retry Logic**: Exponential backoff with circuit breaker patterns
 - [x] **Settlement Processing**: Automated settlement with reconciliation
-- [x] **HSM Integration**: Hardware Security Module simulation
 - [x] **Dispute Management**: Chargeback and dispute handling workflow
+- [x] **Retry Logic**: Exponential backoff with circuit breaker patterns
+- [x] **HSM Integration**: Hardware Security Module simulation
 
-### 🔧 Technical Implementation
+### Non Functional
 
-- [x] **Microservices Architecture**: Go-based services with gRPC communication
 - [x] **Secure Enclaves**: Isolated PCI-compliant tokenization service
 - [x] **Event-Driven Architecture**: Kafka-based async processing
 - [x] **Caching Layer**: Redis for session management and rate limiting
@@ -101,62 +165,13 @@ graph TB
 - [x] **API Security**: OAuth 2.0, JWT tokens, and API key management
 - [x] **Monitoring**: Real-time fraud alerts and transaction monitoring
 
-## Quick Start
+### Next Steps
 
-### Prerequisites
-
-- Docker & Docker Compose
-- Go 1.21+
-- OpenSSL for certificate generation
-- Make
-
-### 1. Start Infrastructure
-
-```bash
-# Start all required services
-cd payments-acquiring-gateway
-docker-compose up -d
-
-# Wait for services to be ready
-./scripts/wait-for-services.sh
-```
-
-### 2. Generate Certificates
-
-```bash
-# Generate TLS certificates for secure communication
-./scripts/generate-certificates.sh
-
-# Initialize HSM simulator
-./scripts/init-hsm.sh
-```
-
-### 3. Start Services
-
-```bash
-# Build and start all services
-make build-all
-make start-all
-
-# Load test data (test cards, merchants)
-make load-test-data
-```
-
-### 4. Run Tests
-
-```bash
-# Run all tests
-make test-all
-
-# Run PCI compliance tests
-make test-compliance
-
-# Run fraud detection tests
-make test-fraud
-
-# Run 3D Secure tests
-make test-3ds
-```
+1. **Enhanced ML Models**: Advanced fraud detection algorithms
+2. **Real-time Analytics**: Stream processing for instant insights
+3. **Multi-currency Support**: Global payment processing
+4. **Cryptocurrency Integration**: Digital currency support
+5. **Open Banking APIs**: PSD2 and Open Banking compliance
 
 ## API Examples
 
@@ -223,147 +238,75 @@ curl -X POST https://localhost:8443/api/v1/refunds \
   }'
 ```
 
-## Test Scenarios
 
-### PCI Compliance Tests
+## Core Services Implemented
 
-```bash
-# Test card data encryption
-./tests/compliance/test-encryption.sh
+1. **Authorization Service** (Go, Port 8446)
+   - Main payment processing API with REST endpoints
+   - gRPC communication with internal services
+   - OpenTelemetry distributed tracing
+   - Prometheus metrics collection
+   - TLS 1.3 secure communication
 
-# Test access controls
-./tests/compliance/test-access-control.sh
+2. **Tokenization Service** (Go, Port 8445) - PCI Scope
+   - Format-preserving encryption for PAN tokenization
+   - HSM integration for key management
+   - Vault integration for secure configuration
+   - Field-level encryption with AES-256-GCM
+   - Token lifecycle management
 
-# Test audit logging
-./tests/compliance/test-audit-logs.sh
-```
+3. **Fraud Detection Service** (Python, Port 8447)
+   - Real-time ML-based fraud scoring
+   - Velocity checks and rate limiting
+   - Geolocation-based risk assessment
+   - Pattern recognition for suspicious transactions
+   - Configurable fraud rules engine
 
-### Fraud Detection Tests
+4. **3D Secure Service** (Node.js, Port 8448)
+   - Complete 3DS 2.0 authentication workflow
+   - Frictionless and challenge flows
+   - Browser and mobile SDK integration
+   - Real-time issuer communication
+   - Risk-based authentication
 
-```bash
-# Test velocity checks
-./tests/fraud/test-velocity-checks.sh
+5. **Settlement Service** (Java, Port 8449)
+   - Automated daily settlement processing
+   - Real-time reconciliation with acquirers
+   - Batch processing with retry logic
+   - Settlement reporting and analytics
+   - Dispute and chargeback handling
 
-# Test geolocation fraud
-./tests/fraud/test-geo-fraud.sh
+6. **Retry Engine** (Rust, Port 8450)
+   - Intelligent retry logic with exponential backoff
+   - Circuit breaker pattern implementation
+   - Multi-PSP failover routing
+   - Dead letter queue processing
+   - Retry analytics and monitoring
 
-# Test ML model scoring
-./tests/fraud/test-ml-scoring.sh
-```
+7. **HSM Simulator** (Go, Port 8444)
+   - Hardware Security Module simulation
+   - Cryptographic key generation and management
+   - Secure key storage and rotation
+   - PKCS#11 interface simulation
+   - Audit logging for key operations
 
-### High Availability Tests
+**Database Schema (PostgreSQL):**
+- **12+ tables** with PCI DSS compliant design
+- **Field-level encryption** for sensitive card data
+- **Audit trails** with cryptographic integrity
+- **Double-entry validation** triggers
+- **Performance-optimized indexes** for high throughput
+- **Custom types** for payment statuses and card brands
 
-```bash
-# Test PSP failover
-./tests/ha/test-psp-failover.sh
-
-# Test database failover
-./tests/ha/test-db-failover.sh
-
-# Test circuit breaker
-./tests/ha/test-circuit-breaker.sh
-```
-
-### Performance Tests
-
-```bash
-# Load test with 1000 TPS
-./tests/performance/load-test-1000tps.sh
-
-# Stress test payment processing
-./tests/performance/stress-test.sh
-
-# Test 3D Secure flow performance
-./tests/performance/3ds-performance.sh
-```
-
-## Monitoring & Observability
-
-### Metrics Dashboard
-
-Access Grafana at https://localhost:3000 (admin/payments_admin)
-
-Key metrics monitored:
-- Transaction volume and success rates
-- Fraud detection accuracy (precision/recall)
-- 3D Secure completion rates
-- PSP response times and availability
-- Settlement reconciliation status
-- PCI compliance violations
-
-### Real-time Alerts
-
-- High fraud score transactions
-- PSP downtime or high error rates
-- Settlement discrepancies
-- Security policy violations
-- Performance degradation
-
-### Distributed Tracing
-
-Access Jaeger at http://localhost:16686
-
-Traces include:
-- End-to-end payment processing
-- 3D Secure authentication flow
-- Fraud detection pipeline
-- Settlement batch processing
-- External PSP communication
-
-## Security & Compliance
-
-### PCI DSS Compliance
-
-- **Scope Minimization**: Tokenization reduces PCI scope
-- **Data Encryption**: AES-256 encryption for card data
-- **Access Controls**: Role-based access with MFA
-- **Network Security**: TLS 1.3, network segmentation
-- **Audit Logging**: Comprehensive audit trail
-- **Vulnerability Management**: Regular security scans
-
-### Fraud Prevention
-
-- **Real-time Scoring**: ML-based fraud detection
-- **Velocity Checks**: Transaction frequency limits
-- **Geolocation Analysis**: Location-based risk assessment
-- **Device Fingerprinting**: Device-based fraud detection
-- **Behavioral Analysis**: User behavior pattern analysis
-- **Blacklist Management**: Dynamic blacklist updates
-
-### 3D Secure 2.0
-
-- **Frictionless Flow**: Risk-based authentication
-- **Challenge Flow**: Step-up authentication when needed
-- **Browser Integration**: Seamless browser experience
-- **Mobile SDK**: Native mobile app integration
-- **Issuer Integration**: Real-time issuer communication
-
-## Directory Structure
-
-```
-payments-acquiring-gateway/
-├── services/
-│   ├── authorization-service/    # Payment authorization
-│   ├── tokenization-service/     # Card tokenization (PCI scope)
-│   ├── fraud-detection-service/  # ML-based fraud detection
-│   ├── three-d-secure-service/   # 3DS authentication
-│   ├── settlement-service/       # Settlement processing
-│   ├── retry-engine/            # Failed payment retry logic
-│   └── hsm-simulator/           # HSM simulation
-├── infrastructure/
-│   ├── docker-compose.yml       # Infrastructure services
-│   ├── tls/                     # TLS certificates
-│   ├── vault/                   # Secure configuration
-│   └── monitoring/              # Observability stack
-├── tests/
-│   ├── compliance/              # PCI compliance tests
-│   ├── fraud/                   # Fraud detection tests
-│   ├── performance/             # Load and stress tests
-│   └── integration/             # End-to-end tests
-├── scripts/                     # Automation scripts
-├── docs/                        # Documentation
-└── Makefile                     # Build automation
-```
+**Key Tables:**
+- `merchants` - Merchant configuration and API keys
+- `card_tokens` - Encrypted tokenized card data (PCI scope)
+- `payments` - Payment transactions with full audit trail
+- `payment_events` - Event sourcing for payment lifecycle
+- `refunds` - Refund processing with validation
+- `settlement_batches` - Daily settlement processing
+- `fraud_rules` - Configurable fraud detection rules
+- `fraud_alerts` - Real-time fraud notifications
 
 ## External Integrations
 
@@ -397,134 +340,66 @@ payments-acquiring-gateway/
 - **GDPR**: Data privacy compliance
 - **PSD2**: European payment services directive
 
-## Implementation Details
+## Security & Compliance
 
-### ✅ Completed Implementation
+### PCI DSS Compliance
 
-This Payments Acquiring Gateway has been fully implemented with:
+- **Scope Minimization**: Tokenization reduces PCI scope
+- **Data Encryption**: AES-256 encryption for card data
+- **Access Controls**: Role-based access with MFA
+- **Network Security**: TLS 1.3, network segmentation
+- **Audit Logging**: Comprehensive audit trail
+- **Vulnerability Management**: Regular security scans
 
-**Core Services:**
-- **Authorization Service** (Go): Main payment processing API with gRPC and REST endpoints
-- **Tokenization Service** (Go): PCI-compliant card tokenization with HSM integration
-- **Fraud Detection Service** (Python): ML-based real-time fraud scoring
-- **3D Secure Service** (Node.js): Complete 3DS 2.0 authentication flow
-- **Settlement Service** (Java): Batch settlement processing with reconciliation
-- **Retry Engine** (Rust): Intelligent retry logic with exponential backoff
-- **HSM Simulator** (Go): Hardware Security Module simulation for key management
+### Fraud Prevention
 
-**Database Schema:**
-- Comprehensive PostgreSQL schema with 12+ tables
-- PCI DSS compliant field-level encryption
-- Audit trails with cryptographic integrity
-- Double-entry validation triggers
-- Performance-optimized indexes
+- **Real-time Scoring**: ML-based fraud detection
+- **Velocity Checks**: Transaction frequency limits
+- **Geolocation Analysis**: Location-based risk assessment
+- **Device Fingerprinting**: Device-based fraud detection
+- **Behavioral Analysis**: User behavior pattern analysis
+- **Blacklist Management**: Dynamic blacklist updates
 
-**Infrastructure:**
-- Docker Compose with 15+ services
-- PostgreSQL with replication
-- Redis for caching and session management
-- Kafka for event streaming
-- Vault for secrets management
-- Complete observability stack (Prometheus, Grafana, Jaeger)
+### 3D Secure 2.0
 
-**Testing Suite:**
-- Integration tests in Go (payment flows, tokenization, fraud detection)
-- Fraud detection tests in Python (velocity, geolocation, ML scoring)
-- PCI compliance tests (encryption, access control, audit logging)
-- Performance tests (1000+ TPS sustained throughput)
-- Chaos engineering tests (PSP failover, network partitions)
+- **Frictionless Flow**: Risk-based authentication
+- **Challenge Flow**: Step-up authentication when needed
+- **Browser Integration**: Seamless browser experience
+- **Mobile SDK**: Native mobile app integration
+- **Issuer Integration**: Real-time issuer communication
 
-**Security & Compliance:**
-- PCI DSS Level 1 compliant architecture
-- AES-256-GCM encryption for card data
-- TLS 1.3 for all communications
-- Role-based access control (RBAC)
-- Comprehensive audit logging
-- Vulnerability scanning integration
+## Monitoring & Observability
 
-**Performance Characteristics:**
-- **Throughput**: 2000+ TPS sustained, 5000+ TPS peak
-- **Latency**: <100ms p95 for authorization
-- **Availability**: 99.99% uptime with multi-PSP failover
-- **Fraud Detection**: <50ms ML scoring latency
-- **Settlement**: Daily batch processing with real-time reconciliation
+### Metrics Dashboard
 
-**Operational Features:**
-- Health checks and readiness probes
-- Graceful shutdown and rolling deployments
-- Comprehensive metrics and alerting
-- Automated certificate management
-- Database migration scripts
-- Disaster recovery procedures
+Access Grafana at https://localhost:3000 (admin/payments_admin)
 
-### Quick Start Guide
+Key metrics monitored:
+- Transaction volume and success rates
+- Fraud detection accuracy (precision/recall)
+- 3D Secure completion rates
+- PSP response times and availability
+- Settlement reconciliation status
+- PCI compliance violations
 
-```bash
-# Clone and setup
-cd payments-acquiring-gateway
+### Real-time Alerts
 
-# Start infrastructure and services
-make quick-start
+- High fraud score transactions
+- PSP downtime or high error rates
+- Settlement discrepancies
+- Security policy violations
+- Performance degradation
 
-# Run comprehensive tests
-make test-all
+### Distributed Tracing
 
-# Load test at 1000 TPS
-make load-test-1000tps
+Access Jaeger at http://localhost:16686
 
-# Access monitoring
-open http://localhost:3002  # Grafana (admin/payments_admin)
-open http://localhost:16688 # Jaeger tracing
-```
-
-### API Examples
-
-**Process Payment:**
-```bash
-curl -X POST https://localhost:8446/api/v1/payments \
-  -H "Authorization: Bearer pk_test_123..." \
-  -d '{
-    "amount": "10000",
-    "currency": "USD",
-    "card_token": "tok_abc123...",
-    "three_d_secure": {"enabled": true}
-  }'
-```
-
-**Tokenize Card:**
-```bash
-curl -X POST https://localhost:8445/api/v1/tokens \
-  -H "Authorization: Bearer pk_test_123..." \
-  -d '{
-    "card_number": "4111111111111111",
-    "expiry_month": "12",
-    "expiry_year": "2025"
-  }'
-```
-
-### Monitoring Endpoints
-
-- **Grafana Dashboard**: http://localhost:3002
-- **Prometheus Metrics**: http://localhost:9092
-- **Jaeger Tracing**: http://localhost:16688
-- **Service Health**: https://localhost:8446/health
-
-### Test Coverage
-
-- **Unit Tests**: 95%+ code coverage across all services
-- **Integration Tests**: End-to-end payment flows
-- **Fraud Tests**: ML model accuracy >98%
-- **Performance Tests**: Sustained 2000+ TPS
-- **Compliance Tests**: PCI DSS validation
-- **Chaos Tests**: Network partition recovery
-
-## Next Steps
-
-1. **Enhanced ML Models**: Advanced fraud detection algorithms
-2. **Real-time Analytics**: Stream processing for instant insights
-3. **Multi-currency Support**: Global payment processing
-4. **Cryptocurrency Integration**: Digital currency support
-5. **Open Banking APIs**: PSD2 and Open Banking compliance
+Traces include:
+- End-to-end payment processing
+- 3D Secure authentication flow
+- Fraud detection pipeline
+- Settlement batch processing
+- External PSP communication
 
 ## Contributing
 
