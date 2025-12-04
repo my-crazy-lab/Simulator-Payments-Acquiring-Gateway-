@@ -1,5 +1,9 @@
 # Payments Acquiring Gateway
 
+## Purpose
+
+- Build a real product, learning purpose but must deep and strong challenge.
+
 ## Overview
 
 PCI DSS compliant: Tuân thủ tiêu chuẩn bảo mật quốc tế cho ngành thẻ (PCI DSS – Payment Card Industry Data Security Standard).
@@ -146,24 +150,24 @@ graph TB
 
 ### Functinal
 
-- [x] **PCI DSS Compliance**: Secure card data handling with tokenization
-- [x] **Card Tokenization**: PAN tokenization with format-preserving encryption
-- [x] **Fraud Detection**: Real-time ML-based fraud scoring
-- [x] **3D Secure Flow**: Complete 3DS 2.0 authentication workflow
-- [x] **Multi-PSP Routing**: Intelligent routing to multiple payment providers
-- [x] **Settlement Processing**: Automated settlement with reconciliation
-- [x] **Dispute Management**: Chargeback and dispute handling workflow
-- [x] **Retry Logic**: Exponential backoff with circuit breaker patterns
-- [x] **HSM Integration**: Hardware Security Module simulation
+- **PCI DSS Compliance**: Secure card data handling with tokenization
+- **Card Tokenization**: PAN tokenization with format-preserving encryption
+- **Fraud Detection**: Real-time ML-based fraud scoring
+- **3D Secure Flow**: Complete 3DS 2.0 authentication workflow
+- **Multi-PSP Routing**: Intelligent routing to multiple payment providers
+- **Settlement Processing**: Automated settlement with reconciliation
+- **Dispute Management**: Chargeback and dispute handling workflow
+- **Retry Logic**: Exponential backoff with circuit breaker patterns
+- **HSM Integration**: Hardware Security Module simulation
 
 ### Non Functional
 
-- [x] **Secure Enclaves**: Isolated PCI-compliant tokenization service
-- [x] **Event-Driven Architecture**: Kafka-based async processing
-- [x] **Caching Layer**: Redis for session management and rate limiting
-- [x] **Database Encryption**: Field-level encryption for sensitive data
-- [x] **API Security**: OAuth 2.0, JWT tokens, and API key management
-- [x] **Monitoring**: Real-time fraud alerts and transaction monitoring
+- **Secure Enclaves**: Isolated PCI-compliant tokenization service
+- **Event-Driven Architecture**: Kafka-based async processing
+- **Caching Layer**: Redis for session management and rate limiting
+- **Database Encryption**: Field-level encryption for sensitive data
+- **API Security**: OAuth 2.0, JWT tokens, and API key management
+- **Monitoring**: Real-time fraud alerts and transaction monitoring
 
 ### Next Steps
 
@@ -241,12 +245,12 @@ curl -X POST https://localhost:8443/api/v1/refunds \
 
 ## Core Services Implemented
 
-1. **Authorization Service** (Go, Port 8446)
-   - Main payment processing API with REST endpoints
-   - gRPC communication with internal services
-   - OpenTelemetry distributed tracing
-   - Prometheus metrics collection
-   - TLS 1.3 secure communication
+7. **HSM Simulator** (Go, Port 8444)
+   - Hardware Security Module simulation
+   - Cryptographic key generation and management
+   - Secure key storage and rotation
+   - PKCS#11 interface simulation
+   - Audit logging for key operations
 
 2. **Tokenization Service** (Go, Port 8445) - PCI Scope
    - Format-preserving encryption for PAN tokenization
@@ -255,14 +259,21 @@ curl -X POST https://localhost:8443/api/v1/refunds \
    - Field-level encryption with AES-256-GCM
    - Token lifecycle management
 
-3. **Fraud Detection Service** (Python, Port 8447)
+1. **Authorization Service** (Java, Port 8446)
+   - Main payment processing API with REST endpoints
+   - gRPC communication with internal services
+   - OpenTelemetry distributed tracing
+   - Prometheus metrics collection
+   - TLS 1.3 secure communication
+
+3. **Fraud Detection Service** (Java, Port 8447)
    - Real-time ML-based fraud scoring
    - Velocity checks and rate limiting
    - Geolocation-based risk assessment
    - Pattern recognition for suspicious transactions
    - Configurable fraud rules engine
 
-4. **3D Secure Service** (Node.js, Port 8448)
+4. **3D Secure Service** (Java, Port 8448)
    - Complete 3DS 2.0 authentication workflow
    - Frictionless and challenge flows
    - Browser and mobile SDK integration
@@ -282,13 +293,6 @@ curl -X POST https://localhost:8443/api/v1/refunds \
    - Multi-PSP failover routing
    - Dead letter queue processing
    - Retry analytics and monitoring
-
-7. **HSM Simulator** (Go, Port 8444)
-   - Hardware Security Module simulation
-   - Cryptographic key generation and management
-   - Secure key storage and rotation
-   - PKCS#11 interface simulation
-   - Audit logging for key operations
 
 **Database Schema (PostgreSQL):**
 - **12+ tables** with PCI DSS compliant design
