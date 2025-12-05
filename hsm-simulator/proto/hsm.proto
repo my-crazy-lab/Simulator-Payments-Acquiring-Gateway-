@@ -1,0 +1,82 @@
+syntax = "proto3";
+
+package hsm;
+
+option go_package = "github.com/paymentgateway/hsm-simulator/proto";
+
+// HSM Service provides cryptographic operations
+service HSMService {
+  // Generate a new cryptographic key
+  rpc GenerateKey(GenerateKeyRequest) returns (GenerateKeyResponse);
+  
+  // Encrypt data using a specific key
+  rpc Encrypt(EncryptRequest) returns (EncryptResponse);
+  
+  // Decrypt data using a specific key
+  rpc Decrypt(DecryptRequest) returns (DecryptResponse);
+  
+  // Rotate a key to a new version
+  rpc RotateKey(RotateKeyRequest) returns (RotateKeyResponse);
+  
+  // Get key metadata (without exposing the key)
+  rpc GetKeyInfo(GetKeyInfoRequest) returns (GetKeyInfoResponse);
+}
+
+message GenerateKeyRequest {
+  string key_id = 1;
+  string algorithm = 2; // e.g., "AES-256-GCM"
+}
+
+message GenerateKeyResponse {
+  string key_id = 1;
+  int32 version = 2;
+  string algorithm = 3;
+  int64 created_at = 4;
+}
+
+message EncryptRequest {
+  string key_id = 1;
+  bytes plaintext = 2;
+  bytes aad = 3; // Additional authenticated data
+}
+
+message EncryptResponse {
+  bytes ciphertext = 1;
+  bytes nonce = 2;
+  int32 key_version = 3;
+}
+
+message DecryptRequest {
+  string key_id = 1;
+  bytes ciphertext = 2;
+  bytes nonce = 3;
+  bytes aad = 4;
+  int32 key_version = 5;
+}
+
+message DecryptResponse {
+  bytes plaintext = 1;
+}
+
+message RotateKeyRequest {
+  string key_id = 1;
+}
+
+message RotateKeyResponse {
+  string key_id = 1;
+  int32 new_version = 2;
+  int32 old_version = 3;
+}
+
+message GetKeyInfoRequest {
+  string key_id = 1;
+}
+
+message GetKeyInfoResponse {
+  string key_id = 1;
+  int32 current_version = 2;
+  repeated int32 available_versions = 3;
+  string algorithm = 4;
+  int64 created_at = 5;
+  int64 last_rotated_at = 6;
+}

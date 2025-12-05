@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package tokenization;
+
+option go_package = "github.com/paymentgateway/tokenization-service/proto";
+
+// Tokenization Service provides secure PAN tokenization
+service TokenizationService {
+  // Tokenize a card PAN
+  rpc TokenizeCard(TokenizeRequest) returns (TokenizeResponse);
+  
+  // Detokenize to retrieve original PAN
+  rpc DetokenizeCard(DetokenizeRequest) returns (DetokenizeResponse);
+  
+  // Validate a token
+  rpc ValidateToken(ValidateRequest) returns (ValidateResponse);
+}
+
+message TokenizeRequest {
+  string pan = 1;
+  int32 expiry_month = 2;
+  int32 expiry_year = 3;
+  string cvv = 4;
+}
+
+message TokenizeResponse {
+  string token = 1;
+  string last_four = 2;
+  string card_brand = 3;
+  int64 expires_at = 4;
+}
+
+message DetokenizeRequest {
+  string token = 1;
+}
+
+message DetokenizeResponse {
+  string pan = 1;
+  int32 expiry_month = 2;
+  int32 expiry_year = 3;
+}
+
+message ValidateRequest {
+  string token = 1;
+}
+
+message ValidateResponse {
+  bool valid = 1;
+  string error_message = 2;
+}
