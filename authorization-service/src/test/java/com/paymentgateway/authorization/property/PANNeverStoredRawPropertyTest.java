@@ -1,0 +1,120 @@
+package com.paymentgateway.authorization.property;
+
+import com.paymentgateway.authorization.domain.Payment;
+import com.paymentgateway.authorization.dto.PaymentRequest;
+import com.paymentgateway.authorization.repository.PaymentRepository;
+import com.paymentgateway.authorization.service.PaymentService;
+import net.jqwik.api.*;
+import net.jqwik.api.constraints.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
+import java.math.BigDecimal;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * Feature: payment-acquiring-gateway, Property 2: PAN Never Stored Raw
+ * 
+ * For any payment transaction processed, querying the database should never return 
+ * raw PAN data - all PAN fields must be either tokenized or encrypted.
+ * 
+ * Validates: Requirements 1.1, 1.3
+ */
+@SpringBootTest
+@Testcontainers
+class PANNeverStoredRawPropertyTest {
+    
+    @Container
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15")
+        .withDatabaseName("payment_gateway_test")
+        .withUsername("test")
+        .withPassword("test");
+    
+    @DynamicPropertySource
+    static void configureProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", postgres::getJdbcUrl);
+        registry.add("spring.datasource.username", postgres::getUsername);
+        registry.add("spring.datasource.password", postgres::getPassword);
+    }
+    
+    @Autowired
+    private PaymentService paymentService;
+    
+    @Autowired
+    private PaymentRepository paymentRepository;
+    
+    @Property(tries = 100)
+    void panNeverStoredRaw(
+            @ForAll @NumericChars @StringLength(min = 13, max = 19) String cardNumber,
+            @ForAll @IntRange(min = 1, max = 12) int expiryMonth,
+            @ForAll @IntRange(min = 2025, max = 2035) int expiryYear,
+            @ForAll @NumericChars @StringLength(min = 3, max = 4) String cvv,
+            @ForAll @BigRange(min = "0.01", max = "10000.00") BigDecimal amount) {
+        
+        // Arrange
+        PaymentRequest request = new PaymentRequest(
+            cardNumber, expiryMonth, expiryYear, cvv, amount, "USD"
+        );
+        UUID merchantId = UUID.randomUUID();
+        
+        // Act
+        var response = paymentService.processPayment(request, merchantId);
+        
+        // Assert - Query the database and verify PAN is not stored raw
+        Payment storedPayment = paymentRepository.findByPaymentId(response.getPaymentId())
+            .orElseThrow(() -> new AssertionError("Payment not found in database"));
+        
+        // Verify that the card token ID is set (meaning tokenization occurred)
+        assertThat(storedPayment.getCardTokenId())
+            .as("Card token ID should be set, indicating tokenization occurred")
+            .isNotNull();
+        
+        // Verify that only last 4 digits are stored, not the full PAN
+        assertThat(storedPayment.getCardLastFour())
+            .as("Only last 4 digits should be stored")
+            .hasSize(4)
+            .isEqualTo(cardNumber.substring(cardNumber.length() - 4));
+        
+        // The Payment entity should not have a field storing raw PAN
+        // This is verified by the entity design itself - there is no 'cardNumber' field
+        // Only cardTokenId and cardLastFour are stored
+        
+        // Additional verification: ensure the full card number is not in any text fields
+        String paymentString = storedPayment.toString();
+        assertThat(paymentString)
+            .as("Full card number should not appear in payment entity")
+            .doesNotContain(cardNumber);
+    }
+    
+    @Provide
+    Arbitrary<String> validCardNumbers() {
+        return Arbitraries.strings()
+            .numeric()
+            .ofLength(16)
+            .filter(this::passesLuhnCheck);
+    }
+    
+    private boolean passesLuhnCheck(String cardNumber) {
+        int sum = 0;
+        boolean alternate = false;
+        for (int i = cardNumber.length() - 1; i >= 0; i--) {
+            int digit = Character.getNumericValue(cardNumber.charAt(i));
+            if (alternate) {
+                digit *= 2;
+                if (digit > 9) {
+                    digit -= 9;
+                }
+            }
+            sum += digit;
+            alternate = !alternate;
+        }
+        return sum % 10 == 0;
+    }
+}

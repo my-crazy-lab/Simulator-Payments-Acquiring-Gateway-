@@ -1,0 +1,249 @@
+package com.paymentgateway.authorization.property;
+
+import com.paymentgateway.authorization.AuthorizationServiceApplication;
+import com.paymentgateway.authorization.domain.Merchant;
+import com.paymentgateway.authorization.repository.MerchantRepository;
+import com.paymentgateway.authorization.security.JwtTokenProvider;
+import com.paymentgateway.authorization.security.RateLimitService;
+import net.jqwik.api.*;
+import net.jqwik.api.constraints.IntRange;
+import net.jqwik.spring.JqwikSpringSupport;
+import org.junit.jupiter.api.BeforeEach;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.*;
+import org.springframework.test.context.ActiveProfiles;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * Feature: payment-acquiring-gateway, Property 35: Rate Limit Enforcement
+ * For any merchant exceeding their configured rate limit, additional requests
+ * should be rejected with HTTP 429 and include a Retry-After header.
+ * Validates: Requirements 19.1
+ */
+@JqwikSpringSupport
+@SpringBootTest(
+    classes = AuthorizationServiceApplication.class,
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
+)
+@ActiveProfiles("test")
+public class RateLimitEnforcementPropertyTest {
+    
+    @LocalServerPort
+    private int port;
+    
+    @Autowired
+    private TestRestTemplate restTemplate;
+    
+    @Autowired
+    private MerchantRepository merchantRepository;
+    
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
+    
+    @Autowired
+    private RateLimitService rateLimitService;
+    
+    private String baseUrl;
+    
+    @BeforeEach
+    void setUp() {
+        baseUrl = "http://localhost:" + port;
+        merchantRepository.deleteAll();
+    }
+    
+    /**
+     * Property: Requests exceeding rate limit should return 429 with Retry-After header
+     */
+    @Property(tries = 50)
+    void requestsExceedingRateLimitShouldReturn429(
+            @ForAll @IntRange(min = 1, max = 10) int rateLimit) {
+        
+        // Create merchant with specific rate limit
+        Merchant merchant = new Merchant("RATE_TEST_" + System.nanoTime(), "Rate Test Merchant");
+        merchant.setRoles(Set.of("PAYMENT_CREATE"));
+        merchant.setIsActive(true);
+        merchant.setRateLimitPerSecond(rateLimit);
+        merchant = merchantRepository.save(merchant);
+        
+        // Generate valid JWT token
+        String token = jwtTokenProvider.generateToken(merchant);
+        
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + token);
+        
+        Map<String, Object> paymentRequest = createValidPaymentRequest();
+        
+        // Make requests up to the limit
+        int successfulRequests = 0;
+        int rateLimitedRequests = 0;
+        
+        for (int i = 0; i < rateLimit + 5; i++) {
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(paymentRequest, headers);
+            
+            ResponseEntity<String> response = restTemplate.exchange(
+                baseUrl + "/api/v1/payments",
+                HttpMethod.POST,
+                request,
+                String.class
+            );
+            
+            if (response.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS) {
+                rateLimitedRequests++;
+                
+                // Verify Retry-After header is present
+                assert response.getHeaders().containsKey("Retry-After") :
+                    "Expected Retry-After header in 429 response";
+                
+                // Verify rate limit headers
+                assert response.getHeaders().containsKey("X-RateLimit-Limit") :
+                    "Expected X-RateLimit-Limit header in 429 response";
+                
+                assert response.getHeaders().containsKey("X-RateLimit-Remaining") :
+                    "Expected X-RateLimit-Remaining header in 429 response";
+                
+                String remaining = response.getHeaders().getFirst("X-RateLimit-Remaining");
+                assert "0".equals(remaining) :
+                    "Expected X-RateLimit-Remaining to be 0 but was " + remaining;
+            } else if (response.getStatusCode().is2xxSuccessful() || 
+                      response.getStatusCode() == HttpStatus.CREATED) {
+                successfulRequests++;
+            }
+        }
+        
+        // Should have some rate limited requests after exceeding limit
+        assert rateLimitedRequests > 0 :
+            "Expected some requests to be rate limited after exceeding limit of " + rateLimit;
+        
+        // Successful requests should not exceed rate limit significantly
+        // (allowing some tolerance for timing)
+        assert successfulRequests <= rateLimit + 2 :
+            "Expected at most " + (rateLimit + 2) + " successful requests but got " + successfulRequests;
+    }
+    
+    /**
+     * Property: Rate limit should reset after time window
+     */
+    @Property(tries = 20)
+    void rateLimitShouldResetAfterTimeWindow(
+            @ForAll @IntRange(min = 2, max = 5) int rateLimit) throws InterruptedException {
+        
+        // Create merchant with low rate limit
+        Merchant merchant = new Merchant("RESET_TEST_" + System.nanoTime(), "Reset Test Merchant");
+        merchant.setRoles(Set.of("PAYMENT_CREATE"));
+        merchant.setIsActive(true);
+        merchant.setRateLimitPerSecond(rateLimit);
+        merchant = merchantRepository.save(merchant);
+        
+        String token = jwtTokenProvider.generateToken(merchant);
+        
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + token);
+        
+        Map<String, Object> paymentRequest = createValidPaymentRequest();
+        
+        // Exhaust rate limit
+        for (int i = 0; i < rateLimit + 2; i++) {
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(paymentRequest, headers);
+            restTemplate.exchange(
+                baseUrl + "/api/v1/payments",
+                HttpMethod.POST,
+                request,
+                String.class
+            );
+        }
+        
+        // Wait for rate limit window to reset (1 second + buffer)
+        Thread.sleep(1200);
+        
+        // Try again - should succeed
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(paymentRequest, headers);
+        ResponseEntity<String> response = restTemplate.exchange(
+            baseUrl + "/api/v1/payments",
+            HttpMethod.POST,
+            request,
+            String.class
+        );
+        
+        // Should not be rate limited after reset
+        assert response.getStatusCode() != HttpStatus.TOO_MANY_REQUESTS :
+            "Expected rate limit to reset after 1 second but still got 429";
+    }
+    
+    /**
+     * Property: Different merchants should have independent rate limits
+     */
+    @Property(tries = 30)
+    void differentMerchantsShouldHaveIndependentRateLimits(
+            @ForAll @IntRange(min = 2, max = 5) int rateLimit1,
+            @ForAll @IntRange(min = 2, max = 5) int rateLimit2) {
+        
+        // Create two merchants with different rate limits
+        Merchant merchant1 = new Merchant("MERCHANT1_" + System.nanoTime(), "Merchant 1");
+        merchant1.setRoles(Set.of("PAYMENT_CREATE"));
+        merchant1.setIsActive(true);
+        merchant1.setRateLimitPerSecond(rateLimit1);
+        merchant1 = merchantRepository.save(merchant1);
+        
+        Merchant merchant2 = new Merchant("MERCHANT2_" + System.nanoTime(), "Merchant 2");
+        merchant2.setRoles(Set.of("PAYMENT_CREATE"));
+        merchant2.setIsActive(true);
+        merchant2.setRateLimitPerSecond(rateLimit2);
+        merchant2 = merchantRepository.save(merchant2);
+        
+        String token1 = jwtTokenProvider.generateToken(merchant1);
+        String token2 = jwtTokenProvider.generateToken(merchant2);
+        
+        Map<String, Object> paymentRequest = createValidPaymentRequest();
+        
+        // Exhaust merchant1's rate limit
+        HttpHeaders headers1 = new HttpHeaders();
+        headers1.setContentType(MediaType.APPLICATION_JSON);
+        headers1.set("Authorization", "Bearer " + token1);
+        
+        for (int i = 0; i < rateLimit1 + 2; i++) {
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(paymentRequest, headers1);
+            restTemplate.exchange(
+                baseUrl + "/api/v1/payments",
+                HttpMethod.POST,
+                request,
+                String.class
+            );
+        }
+        
+        // Merchant2 should still be able to make requests
+        HttpHeaders headers2 = new HttpHeaders();
+        headers2.setContentType(MediaType.APPLICATION_JSON);
+        headers2.set("Authorization", "Bearer " + token2);
+        
+        HttpEntity<Map<String, Object>> request2 = new HttpEntity<>(paymentRequest, headers2);
+        ResponseEntity<String> response2 = restTemplate.exchange(
+            baseUrl + "/api/v1/payments",
+            HttpMethod.POST,
+            request2,
+            String.class
+        );
+        
+        // Merchant2 should not be rate limited
+        assert response2.getStatusCode() != HttpStatus.TOO_MANY_REQUESTS :
+            "Merchant2 should not be affected by Merchant1's rate limit";
+    }
+    
+    private Map<String, Object> createValidPaymentRequest() {
+        Map<String, Object> request = new HashMap<>();
+        request.put("cardNumber", "4532015112830366");
+        request.put("expiryMonth", 12);
+        request.put("expiryYear", 2025);
+        request.put("cvv", "123");
+        request.put("amount", 100.00);
+        request.put("currency", "USD");
+        return request;
+    }
+}
