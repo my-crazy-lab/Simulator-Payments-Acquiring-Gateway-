@@ -360,7 +360,7 @@
   - Test reconciliation
   - Test dispute handling
 
-- [ ] 17. Implement transaction query and reporting
+- [x] 17. Implement transaction query and reporting
   - Create transaction query endpoint with filters
   - Implement pagination for large result sets
   - Add caching layer using Redis
@@ -369,16 +369,16 @@
   - Add merchant dashboard data endpoints
   - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5_
 
-- [ ] 17.1 Write property test for PAN masking in responses
+- [x] 17.1 Write property test for PAN masking in responses
   - **Property 29: PAN Masking in Responses**
   - **Validates: Requirements 15.2**
 
-- [ ] 17.2 Write unit tests for query endpoints
+- [x] 17.2 Write unit tests for query endpoints
   - Test filtering
   - Test pagination
   - Test caching
 
-- [ ] 18. Implement webhook delivery system
+- [x] 18. Implement webhook delivery system
   - Create webhook delivery service
   - Implement HMAC signature generation
   - Add webhook retry logic with exponential backoff
@@ -387,16 +387,16 @@
   - Store webhook configurations in database
   - _Requirements: 22.1, 22.2, 22.3, 22.4, 22.5_
 
-- [ ] 18.1 Write property test for webhook HMAC signature
+- [x] 18.1 Write property test for webhook HMAC signature
   - **Property 32: Webhook HMAC Signature**
   - **Validates: Requirements 22.2**
 
-- [ ] 18.2 Write unit tests for webhook delivery
+- [x] 18.2 Write unit tests for webhook delivery
   - Test retry logic
   - Test signature verification
   - Test delivery tracking
 
-- [ ] 19. Implement multi-currency support
+- [x] 19. Implement multi-currency support
   - Create currency conversion service
   - Integrate with exchange rate provider
   - Implement rate caching in Redis
@@ -405,16 +405,16 @@
   - Create currency-specific settlement batches
   - _Requirements: 23.1, 23.2, 23.3, 23.4, 23.5_
 
-- [ ] 19.1 Write property test for currency conversion consistency
+- [x] 19.1 Write property test for currency conversion consistency
   - **Property 33: Currency Conversion Consistency**
   - **Validates: Requirements 23.2**
 
-- [ ] 19.2 Write unit tests for currency conversion
+- [x] 19.2 Write unit tests for currency conversion
   - Test rate caching
   - Test conversion accuracy
   - Test fallback behavior
 
-- [-] 20. Implement TLS and security hardening
+- [x] 20. Implement TLS and security hardening
   - Configure TLS 1.3 for all external endpoints
   - Implement mTLS for internal service communication
   - Add security headers to all responses
@@ -423,16 +423,16 @@
   - Configure certificate rotation
   - _Requirements: 1.5, 24.1, 24.2, 24.3, 24.4_
 
-- [ ] 20.1 Write property test for TLS 1.3 enforcement
+- [x] 20.1 Write property test for TLS 1.3 enforcement
   - **Property 34: TLS 1.3 Enforcement**
   - **Validates: Requirements 1.5**
 
-- [ ] 20.2 Write unit tests for security features
+- [x] 20.2 Write unit tests for security features
   - Test security headers
   - Test CORS policies
   - Test input sanitization
 
-- [ ] 21. Implement compensating transactions
+- [-] 21. Implement compensating transactions
   - Create saga pattern implementation
   - Add compensating transaction logic for failures
   - Implement transaction rollback mechanisms

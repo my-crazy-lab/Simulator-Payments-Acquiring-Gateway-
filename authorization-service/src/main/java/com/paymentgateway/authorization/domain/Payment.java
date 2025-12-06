@@ -25,6 +25,16 @@ public class Payment {
     @Column(nullable = false, length = 3)
     private String currency;
     
+    // Multi-currency support (Requirement 23.2)
+    @Column(name = "original_amount", precision = 12, scale = 2)
+    private BigDecimal originalAmount;
+    
+    @Column(name = "original_currency", length = 3)
+    private String originalCurrency;
+    
+    @Column(name = "exchange_rate", precision = 10, scale = 6)
+    private BigDecimal exchangeRate;
+    
     @Column(columnDefinition = "TEXT")
     private String description;
     
@@ -141,6 +151,15 @@ public class Payment {
     
     public String getCurrency() { return currency; }
     public void setCurrency(String currency) { this.currency = currency; }
+    
+    public BigDecimal getOriginalAmount() { return originalAmount; }
+    public void setOriginalAmount(BigDecimal originalAmount) { this.originalAmount = originalAmount; }
+    
+    public String getOriginalCurrency() { return originalCurrency; }
+    public void setOriginalCurrency(String originalCurrency) { this.originalCurrency = originalCurrency; }
+    
+    public BigDecimal getExchangeRate() { return exchangeRate; }
+    public void setExchangeRate(BigDecimal exchangeRate) { this.exchangeRate = exchangeRate; }
     
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
