@@ -432,7 +432,7 @@
   - Test CORS policies
   - Test input sanitization
 
-- [-] 21. Implement compensating transactions
+- [x] 21. Implement compensating transactions
   - Create saga pattern implementation
   - Add compensating transaction logic for failures
   - Implement transaction rollback mechanisms
@@ -440,16 +440,16 @@
   - Add distributed transaction coordination
   - _Requirements: 16.2_
 
-- [ ] 21.1 Write property test for compensating transaction on failure
+- [x] 21.1 Write property test for compensating transaction on failure
   - **Property 40: Compensating Transaction on Failure**
   - **Validates: Requirements 16.2**
 
-- [ ] 21.2 Write unit tests for compensation scenarios
+- [x] 21.2 Write unit tests for compensation scenarios
   - Test partial failure recovery
   - Test rollback logic
   - Test saga coordination
 
-- [ ] 22. Implement monitoring and observability
+- [x] 22. Implement monitoring and observability
   - Configure Prometheus metrics exporters
   - Set up Grafana dashboards
   - Configure Jaeger for distributed tracing
@@ -458,12 +458,12 @@
   - Create log aggregation pipeline
   - _Requirements: 10.3, 10.4, 10.5_
 
-- [ ] 22.1 Write unit tests for metrics collection
+- [x] 22.1 Write unit tests for metrics collection
   - Test metric exporters
   - Test health checks
   - Test alert triggers
 
-- [-] 23. Implement graceful degradation
+- [x] 23. Implement graceful degradation
   - Add fallback logic for fraud service unavailability
   - Implement fallback for 3DS service failures
   - Create fallback for cache unavailability
@@ -471,12 +471,12 @@
   - Implement health status indicators
   - _Requirements: 30.1, 30.2, 30.3, 30.4, 30.5_
 
-- [ ] 23.1 Write unit tests for degradation scenarios
+- [x] 23.1 Write unit tests for degradation scenarios
   - Test service fallbacks
   - Test degraded mode operation
   - Test health indicators
 
-- [ ] 24. Final Checkpoint - Ensure all tests pass
+- [-] 24. Final Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 25. Integration testing and end-to-end flows

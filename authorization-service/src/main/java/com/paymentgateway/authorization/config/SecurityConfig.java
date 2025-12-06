@@ -16,6 +16,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 /**
  * Security configuration for the Authorization Service.
@@ -36,7 +37,7 @@ public class SecurityConfig {
     public SecurityConfig(AuthenticationFilter authenticationFilter, 
                          RateLimitFilter rateLimitFilter,
                          SecurityHeadersFilter securityHeadersFilter,
-                         CorsConfigurationSource corsConfigurationSource) {
+                         @Qualifier("corsConfigurationSource") CorsConfigurationSource corsConfigurationSource) {
         this.authenticationFilter = authenticationFilter;
         this.rateLimitFilter = rateLimitFilter;
         this.securityHeadersFilter = securityHeadersFilter;

@@ -1,0 +1,186 @@
+groups:
+  - name: payment-gateway-alerts
+    rules:
+      # High error rate alert
+      - alert: HighPaymentErrorRate
+        expr: |
+          (sum(rate(payment_failure_total[5m])) / 
+           sum(rate(payment_success_total[5m]) + rate(payment_failure_total[5m]))) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          service: authorization-service
+        annotations:
+          summary: "High payment error rate detected"
+          description: "Payment error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+
+      # High latency alert
+      - alert: HighPaymentLatency
+        expr: |
+          histogram_quantile(0.95, sum(rate(payment_processing_duration_seconds_bucket[5m])) by (le)) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          service: authorization-service
+        annotations:
+          summary: "High payment processing latency"
+          description: "95th percentile latency is {{ $value | humanizeDuration }} (threshold: 500ms)"
+
+      # Circuit breaker open alert
+      - alert: CircuitBreakerOpen
+        expr: circuit_breaker_open_count > 0
+        for: 1m
+        labels:
+          severity: critical
+          service: authorization-service
+        annotations:
+          summary: "Circuit breaker is open"
+          description: "{{ $value }} circuit breaker(s) are currently open"
+
+      # PSP unavailable alert
+      - alert: PSPUnavailable
+        expr: |
+          sum(psp_health_status{status="unhealthy"}) > 0
+        for: 2m
+        labels:
+          severity: critical
+          service: authorization-service
+        annotations:
+          summary: "PSP is unavailable"
+          description: "One or more PSPs are currently unavailable"
+
+      # Database connection pool exhaustion
+      - alert: DatabaseConnectionPoolExhausted
+        expr: |
+          hikaricp_connections_active / hikaricp_connections_max > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          service: authorization-service
+        annotations:
+          summary: "Database connection pool nearly exhausted"
+          description: "Connection pool usage is at {{ $value | humanizePercentage }}"
+
+      # Redis connection issues
+      - alert: RedisConnectionFailure
+        expr: |
+          up{job="authorization-service"} == 1 and 
+          redis_connection_status == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: authorization-service
+        annotations:
+          summary: "Redis connection failure"
+          description: "Unable to connect to Redis cache"
+
+      # Kafka consumer lag
+      - alert: KafkaConsumerLag
+        expr: |
+          kafka_consumer_lag_sum > 10000
+        for: 5m
+        labels:
+          severity: warning
+          service: authorization-service
+        annotations:
+          summary: "High Kafka consumer lag"
+          description: "Consumer lag is {{ $value }} messages"
+
+      # High fraud score transactions
+      - alert: HighFraudScoreTransactions
+        expr: |
+          sum(rate(fraud_score_distribution_bucket{le="0.75"}[5m])) / 
+          sum(rate(fraud_score_distribution_count[5m])) < 0.95
+        for: 10m
+        labels:
+          severity: warning
+          service: fraud-detection
+        annotations:
+          summary: "High number of high-risk transactions"
+          description: "More than 5% of transactions have fraud score > 0.75"
+
+      # Service down alert
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "Service {{ $labels.job }} has been down for more than 1 minute"
+
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: |
+          jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"} > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          service: authorization-service
+        annotations:
+          summary: "High JVM heap memory usage"
+          description: "Heap memory usage is at {{ $value | humanizePercentage }}"
+
+      # Transaction throughput drop
+      - alert: LowTransactionThroughput
+        expr: |
+          sum(rate(payment_authorization_total[5m])) < 10
+        for: 10m
+        labels:
+          severity: warning
+          service: authorization-service
+        annotations:
+          summary: "Low transaction throughput"
+          description: "Transaction rate is {{ $value }} per second (expected > 10)"
+
+  - name: settlement-alerts
+    rules:
+      # Settlement batch failure
+      - alert: SettlementBatchFailure
+        expr: |
+          increase(settlement_batch_failure_total[1h]) > 0
+        for: 5m
+        labels:
+          severity: critical
+          service: settlement-service
+        annotations:
+          summary: "Settlement batch failure detected"
+          description: "{{ $value }} settlement batch(es) failed in the last hour"
+
+      # Reconciliation discrepancy
+      - alert: ReconciliationDiscrepancy
+        expr: |
+          settlement_reconciliation_discrepancy_total > 0
+        for: 5m
+        labels:
+          severity: warning
+          service: settlement-service
+        annotations:
+          summary: "Settlement reconciliation discrepancy"
+          description: "{{ $value }} discrepancies detected in settlement reconciliation"
+
+  - name: security-alerts
+    rules:
+      # High rate of authentication failures
+      - alert: HighAuthenticationFailureRate
+        expr: |
+          sum(rate(authentication_failure_total[5m])) > 10
+        for: 2m
+        labels:
+          severity: warning
+          service: authorization-service
+        annotations:
+          summary: "High authentication failure rate"
+          description: "{{ $value }} authentication failures per second"
+
+      # Rate limit exceeded frequently
+      - alert: FrequentRateLimitExceeded
+        expr: |
+          sum(rate(rate_limit_exceeded_total[5m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+          service: authorization-service
+        annotations:
+          summary: "Frequent rate limit violations"
+          description: "{{ $value }} rate limit violations per second"

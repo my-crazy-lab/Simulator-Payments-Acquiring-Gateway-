@@ -31,10 +31,10 @@ public class PaymentEvent {
     @Column(columnDefinition = "TEXT")
     private String description;
     
-    @Column(name = "psp_response", columnDefinition = "JSONB")
+    @Column(name = "psp_response", columnDefinition = "TEXT")
     private String pspResponse;
     
-    @Column(name = "gateway_response", columnDefinition = "JSONB")
+    @Column(name = "gateway_response", columnDefinition = "TEXT")
     private String gatewayResponse;
     
     @Column(name = "processing_time_ms")
