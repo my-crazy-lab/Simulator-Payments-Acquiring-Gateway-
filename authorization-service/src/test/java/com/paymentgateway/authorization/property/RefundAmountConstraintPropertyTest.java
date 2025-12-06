@@ -94,8 +94,10 @@ class RefundAmountConstraintPropertyTest {
         RefundRequest request = new RefundRequest(payment.getPaymentId(), refundAmount);
         
         // Process refund - should succeed
+        com.paymentgateway.authorization.event.PaymentEventPublisher eventPublisher = 
+            mock(com.paymentgateway.authorization.event.PaymentEventPublisher.class);
         RefundService service = new RefundService(refundRepository, paymentRepository, 
-            paymentEventRepository, pspRoutingService);
+            paymentEventRepository, pspRoutingService, eventPublisher);
         RefundResponse response = service.processRefund(request, merchantId);
         
         // Verify refund was accepted
@@ -149,8 +151,10 @@ class RefundAmountConstraintPropertyTest {
         RefundRequest request = new RefundRequest(payment.getPaymentId(), additionalRefund);
         
         // Process refund - should fail with IllegalArgumentException
+        com.paymentgateway.authorization.event.PaymentEventPublisher eventPublisher = 
+            mock(com.paymentgateway.authorization.event.PaymentEventPublisher.class);
         RefundService service = new RefundService(refundRepository, paymentRepository, 
-            paymentEventRepository, pspRoutingService);
+            paymentEventRepository, pspRoutingService, eventPublisher);
         assertThatThrownBy(() -> service.processRefund(request, merchantId))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("exceeds available balance");
@@ -215,8 +219,10 @@ class RefundAmountConstraintPropertyTest {
                     .thenReturn(pspResponse);
                 
                 RefundRequest request = new RefundRequest(payment.getPaymentId(), refundAmount);
+                com.paymentgateway.authorization.event.PaymentEventPublisher eventPublisher = 
+                    mock(com.paymentgateway.authorization.event.PaymentEventPublisher.class);
                 RefundService service = new RefundService(refundRepository, paymentRepository, 
-                    paymentEventRepository, pspRoutingService);
+                    paymentEventRepository, pspRoutingService, eventPublisher);
                 RefundResponse response = service.processRefund(request, merchantId);
                 
                 assertThat(response).isNotNull();
@@ -224,8 +230,10 @@ class RefundAmountConstraintPropertyTest {
             } else {
                 // Should fail
                 RefundRequest request = new RefundRequest(payment.getPaymentId(), refundAmount);
+                com.paymentgateway.authorization.event.PaymentEventPublisher eventPublisher = 
+                    mock(com.paymentgateway.authorization.event.PaymentEventPublisher.class);
                 RefundService service = new RefundService(refundRepository, paymentRepository, 
-                    paymentEventRepository, pspRoutingService);
+                    paymentEventRepository, pspRoutingService, eventPublisher);
                 assertThatThrownBy(() -> service.processRefund(request, merchantId))
                     .isInstanceOf(IllegalArgumentException.class);
                 break; // Stop after first rejection

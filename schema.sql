@@ -415,6 +415,48 @@ CREATE TRIGGER validate_refund_amount_trigger
     BEFORE INSERT ON refunds 
     FOR EACH ROW EXECUTE FUNCTION validate_payment_amount();
 
+-- Disputes table (for chargebacks)
+CREATE TABLE disputes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    dispute_id VARCHAR(100) UNIQUE NOT NULL,
+    payment_id UUID NOT NULL REFERENCES payments(id),
+    merchant_id UUID NOT NULL REFERENCES merchants(id),
+    
+    -- Dispute details
+    amount DECIMAL(12,2) NOT NULL,
+    currency VARCHAR(3) NOT NULL,
+    reason_code VARCHAR(50),
+    reason TEXT,
+    
+    -- Status
+    status VARCHAR(20) DEFAULT 'OPEN', -- OPEN, PENDING_EVIDENCE, UNDER_REVIEW, WON, LOST, CLOSED
+    
+    -- Chargeback info
+    chargeback_reference VARCHAR(100),
+    deadline TIMESTAMP WITH TIME ZONE,
+    
+    -- Evidence and resolution
+    evidence_submitted_at TIMESTAMP WITH TIME ZONE,
+    resolved_at TIMESTAMP WITH TIME ZONE,
+    resolution TEXT,
+    
+    -- Timestamps
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE,
+    
+    -- Constraints
+    CONSTRAINT positive_dispute_amount CHECK (amount > 0),
+    CONSTRAINT valid_dispute_currency CHECK (currency ~ '^[A-Z]{3}$'),
+    CONSTRAINT valid_dispute_id CHECK (dispute_id ~ '^dis_[A-Za-z0-9]{24}$')
+);
+
+CREATE INDEX idx_disputes_payment_id ON disputes(payment_id);
+CREATE INDEX idx_disputes_merchant_id ON disputes(merchant_id);
+CREATE INDEX idx_disputes_status ON disputes(status);
+CREATE INDEX idx_disputes_created_at ON disputes(created_at);
+
+CREATE TRIGGER update_disputes_updated_at BEFORE UPDATE ON disputes FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 -- Grant permissions
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO payments_user;
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO payments_user;

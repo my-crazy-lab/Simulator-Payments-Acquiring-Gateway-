@@ -3,6 +3,8 @@ package com.paymentgateway.authorization.service;
 import com.paymentgateway.authorization.domain.*;
 import com.paymentgateway.authorization.dto.RefundRequest;
 import com.paymentgateway.authorization.dto.RefundResponse;
+import com.paymentgateway.authorization.event.PaymentEventPublisher;
+import com.paymentgateway.authorization.event.PaymentEventType;
 import com.paymentgateway.authorization.psp.PSPClient;
 import com.paymentgateway.authorization.psp.PSPRefundResponse;
 import com.paymentgateway.authorization.psp.PSPRoutingService;
@@ -29,15 +31,18 @@ public class RefundService {
     private final PaymentRepository paymentRepository;
     private final PaymentEventRepository paymentEventRepository;
     private final PSPRoutingService pspRoutingService;
+    private final PaymentEventPublisher eventPublisher;
     
     public RefundService(RefundRepository refundRepository,
                         PaymentRepository paymentRepository,
                         PaymentEventRepository paymentEventRepository,
-                        PSPRoutingService pspRoutingService) {
+                        PSPRoutingService pspRoutingService,
+                        PaymentEventPublisher eventPublisher) {
         this.refundRepository = refundRepository;
         this.paymentRepository = paymentRepository;
         this.paymentEventRepository = paymentEventRepository;
         this.pspRoutingService = pspRoutingService;
+        this.eventPublisher = eventPublisher;
     }
     
     @Transactional
@@ -87,6 +92,10 @@ public class RefundService {
                 updatePaymentWithRefund(payment, refund);
                 
                 logRefundEvent(refund, "REFUND_COMPLETED", "Refund completed successfully");
+                
+                // Publish refund event to Kafka
+                eventPublisher.publishPaymentEvent(payment, PaymentEventType.PAYMENT_REFUNDED);
+                
                 logger.info("Refund completed successfully: {}", refund.getRefundId());
             } else {
                 refund.setStatus(RefundStatus.FAILED);

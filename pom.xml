@@ -18,6 +18,7 @@
         <module>authorization-service</module>
         <module>fraud-detection-service</module>
         <module>threeds-service</module>
+        <module>settlement-service</module>
     </modules>
 
     <properties>

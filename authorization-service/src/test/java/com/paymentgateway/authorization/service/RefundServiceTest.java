@@ -43,6 +43,9 @@ class RefundServiceTest {
     @Mock
     private PSPClient pspClient;
     
+    @Mock
+    private com.paymentgateway.authorization.event.PaymentEventPublisher eventPublisher;
+    
     private RefundService refundService;
     
     @BeforeEach
@@ -52,7 +55,8 @@ class RefundServiceTest {
             refundRepository,
             paymentRepository,
             paymentEventRepository,
-            pspRoutingService
+            pspRoutingService,
+            eventPublisher
         );
     }
     

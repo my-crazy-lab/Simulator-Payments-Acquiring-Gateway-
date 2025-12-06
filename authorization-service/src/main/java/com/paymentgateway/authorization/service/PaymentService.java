@@ -3,6 +3,8 @@ package com.paymentgateway.authorization.service;
 import com.paymentgateway.authorization.domain.*;
 import com.paymentgateway.authorization.dto.PaymentRequest;
 import com.paymentgateway.authorization.dto.PaymentResponse;
+import com.paymentgateway.authorization.event.PaymentEventPublisher;
+import com.paymentgateway.authorization.event.PaymentEventType;
 import com.paymentgateway.authorization.idempotency.IdempotencyService;
 import com.paymentgateway.authorization.psp.*;
 import com.paymentgateway.authorization.repository.PaymentEventRepository;
@@ -28,17 +30,20 @@ public class PaymentService {
     private final PSPRoutingService pspRoutingService;
     private final Tracer tracer;
     private final IdempotencyService idempotencyService;
+    private final PaymentEventPublisher eventPublisher;
     
     public PaymentService(PaymentRepository paymentRepository,
                          PaymentEventRepository paymentEventRepository,
                          PSPRoutingService pspRoutingService,
                          Tracer tracer,
-                         IdempotencyService idempotencyService) {
+                         IdempotencyService idempotencyService,
+                         PaymentEventPublisher eventPublisher) {
         this.paymentRepository = paymentRepository;
         this.paymentEventRepository = paymentEventRepository;
         this.pspRoutingService = pspRoutingService;
         this.tracer = tracer;
         this.idempotencyService = idempotencyService;
+        this.eventPublisher = eventPublisher;
     }
     
     @Transactional
@@ -145,12 +150,17 @@ public class PaymentService {
             // Save payment
             payment = paymentRepository.save(payment);
             
-            // Create payment event
+            // Create payment event in database
             PaymentEvent event = new PaymentEvent(payment.getId(), "AUTHORIZATION", "SUCCESS");
             event.setAmount(payment.getAmount());
             event.setCurrency(payment.getCurrency());
             event.setProcessingTimeMs((int) processingTime);
             paymentEventRepository.save(event);
+            
+            // Publish event to Kafka
+            PaymentEventType eventType = pspResponse.isSuccess() ? 
+                    PaymentEventType.PAYMENT_AUTHORIZED : PaymentEventType.PAYMENT_DECLINED;
+            eventPublisher.publishPaymentEvent(payment, eventType);
             
             logger.info("Payment processed successfully: paymentId={}, status={}, processingTime={}ms",
                        paymentId, payment.getStatus(), processingTime);
@@ -224,11 +234,14 @@ public class PaymentService {
         payment.setCapturedAt(Instant.now());
         payment = paymentRepository.save(payment);
         
-        // Create payment event
+        // Create payment event in database
         PaymentEvent event = new PaymentEvent(payment.getId(), "CAPTURE", "SUCCESS");
         event.setAmount(payment.getAmount());
         event.setCurrency(payment.getCurrency());
         paymentEventRepository.save(event);
+        
+        // Publish event to Kafka
+        eventPublisher.publishPaymentEvent(payment, PaymentEventType.PAYMENT_CAPTURED);
         
         logger.info("Payment captured: paymentId={}", paymentId);
         
@@ -261,11 +274,14 @@ public class PaymentService {
         payment.setStatus(PaymentStatus.CANCELLED);
         payment = paymentRepository.save(payment);
         
-        // Create payment event
+        // Create payment event in database
         PaymentEvent event = new PaymentEvent(payment.getId(), "VOID", "SUCCESS");
         event.setAmount(payment.getAmount());
         event.setCurrency(payment.getCurrency());
         paymentEventRepository.save(event);
+        
+        // Publish event to Kafka
+        eventPublisher.publishPaymentEvent(payment, PaymentEventType.PAYMENT_CANCELLED);
         
         logger.info("Payment voided: paymentId={}", paymentId);
         
