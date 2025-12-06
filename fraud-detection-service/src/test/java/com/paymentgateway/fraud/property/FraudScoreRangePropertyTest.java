@@ -26,7 +26,7 @@ class FraudScoreRangePropertyTest {
     private GeolocationService geolocationService;
     private MLFraudScoringService mlFraudScoringService;
     
-    @BeforeEach
+    @net.jqwik.api.lifecycle.BeforeProperty
     void setUp() {
         // Create mocks for dependencies
         RedisTemplate<String, String> redisTemplate = mock(RedisTemplate.class);

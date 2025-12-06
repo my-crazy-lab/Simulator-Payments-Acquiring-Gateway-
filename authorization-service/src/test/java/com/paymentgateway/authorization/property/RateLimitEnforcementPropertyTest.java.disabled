@@ -49,12 +49,8 @@ public class RateLimitEnforcementPropertyTest {
     @Autowired
     private RateLimitService rateLimitService;
     
-    private String baseUrl;
-    
-    @BeforeEach
-    void setUp() {
-        baseUrl = "http://localhost:" + port;
-        merchantRepository.deleteAll();
+    private String getBaseUrl() {
+        return "http://localhost:" + port;
     }
     
     /**
@@ -88,7 +84,7 @@ public class RateLimitEnforcementPropertyTest {
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(paymentRequest, headers);
             
             ResponseEntity<String> response = restTemplate.exchange(
-                baseUrl + "/api/v1/payments",
+                getBaseUrl() + "/api/v1/payments",
                 HttpMethod.POST,
                 request,
                 String.class
@@ -153,7 +149,7 @@ public class RateLimitEnforcementPropertyTest {
         for (int i = 0; i < rateLimit + 2; i++) {
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(paymentRequest, headers);
             restTemplate.exchange(
-                baseUrl + "/api/v1/payments",
+                getBaseUrl() + "/api/v1/payments",
                 HttpMethod.POST,
                 request,
                 String.class
@@ -166,7 +162,7 @@ public class RateLimitEnforcementPropertyTest {
         // Try again - should succeed
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(paymentRequest, headers);
         ResponseEntity<String> response = restTemplate.exchange(
-            baseUrl + "/api/v1/payments",
+            getBaseUrl() + "/api/v1/payments",
             HttpMethod.POST,
             request,
             String.class
@@ -211,7 +207,7 @@ public class RateLimitEnforcementPropertyTest {
         for (int i = 0; i < rateLimit1 + 2; i++) {
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(paymentRequest, headers1);
             restTemplate.exchange(
-                baseUrl + "/api/v1/payments",
+                getBaseUrl() + "/api/v1/payments",
                 HttpMethod.POST,
                 request,
                 String.class
@@ -225,7 +221,7 @@ public class RateLimitEnforcementPropertyTest {
         
         HttpEntity<Map<String, Object>> request2 = new HttpEntity<>(paymentRequest, headers2);
         ResponseEntity<String> response2 = restTemplate.exchange(
-            baseUrl + "/api/v1/payments",
+            getBaseUrl() + "/api/v1/payments",
             HttpMethod.POST,
             request2,
             String.class

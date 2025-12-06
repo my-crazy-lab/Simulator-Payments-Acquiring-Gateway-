@@ -86,12 +86,26 @@ The system consists of multiple services written in different languages:
 ### Authorization Service
 - Base URL: http://localhost:8446
 - Swagger UI: http://localhost:8446/swagger-ui.html
+- OpenAPI Spec: [docs/api/openapi.yaml](docs/api/openapi.yaml)
 
 ### Key Endpoints
 - `POST /api/v1/payments` - Process payment
 - `GET /api/v1/payments/{id}` - Query payment
 - `POST /api/v1/payments/{id}/capture` - Capture authorization
+- `POST /api/v1/payments/{id}/void` - Void authorization
 - `POST /api/v1/refunds` - Process refund
+- `GET /api/v1/transactions` - Query transactions
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [API Reference](docs/api/openapi.yaml) | OpenAPI 3.1 specification |
+| [Deployment Guide](docs/DEPLOYMENT_GUIDE.md) | Deployment instructions |
+| [Operations Runbook](docs/OPERATIONS_RUNBOOK.md) | Operations procedures |
+| [PCI DSS Compliance](docs/PCI_DSS_COMPLIANCE.md) | Compliance procedures |
+| [Merchant Integration](docs/MERCHANT_INTEGRATION_GUIDE.md) | Integration guide |
+| [Troubleshooting](docs/TROUBLESHOOTING_GUIDE.md) | Common issues and solutions |
 
 ## Core Features
 

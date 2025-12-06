@@ -1,0 +1,731 @@
+openapi: 3.1.0
+info:
+  title: Payment Acquiring Gateway API
+  description: |
+    PCI DSS Level 1 compliant payment acquiring gateway API for processing card transactions.
+    
+    ## Authentication
+    All API requests require authentication using either:
+    - **API Key**: Include `X-API-Key` header with your merchant API key
+    - **OAuth 2.0**: Include `Authorization: Bearer <token>` header
+    
+    ## Idempotency
+    For POST requests, include an `Idempotency-Key` header to ensure safe retries.
+    Keys are valid for 24 hours.
+    
+    ## Rate Limiting
+    - Standard tier: 100 requests/minute
+    - Premium tier: 1000 requests/minute
+    - Enterprise tier: Custom limits
+    
+    Rate limit headers are included in all responses:
+    - `X-RateLimit-Limit`: Maximum requests per window
+    - `X-RateLimit-Remaining`: Remaining requests in current window
+    - `X-RateLimit-Reset`: Unix timestamp when the window resets
+    
+    ## Webhooks
+    Configure webhooks to receive real-time notifications for payment events.
+    All webhooks include HMAC-SHA256 signatures for verification.
+    
+  version: 1.0.0
+  contact:
+    name: Payment Gateway Support
+    email: support@paymentgateway.example.com
+  license:
+    name: Proprietary
+    
+servers:
+  - url: https://api.paymentgateway.example.com/api/v1
+    description: Production server
+  - url: https://sandbox.paymentgateway.example.com/api/v1
+    description: Sandbox server
+  - url: http://localhost:8446/api/v1
+    description: Local development
+
+tags:
+  - name: Payments
+    description: Payment processing operations
+  - name: Refunds
+    description: Refund processing operations
+  - name: Transactions
+    description: Transaction query operations
+  - name: Webhooks
+    description: Webhook management
+  - name: Health
+    description: Service health endpoints
+
+paths:
+  /payments:
+    post:
+      tags:
+        - Payments
+      summary: Create a new payment
+      description: |
+        Initiates a new payment authorization. The payment flow includes:
+        1. Card tokenization (PAN is never stored raw)
+        2. Fraud detection scoring
+        3. 3D Secure authentication (if required)
+        4. PSP authorization
+      operationId: createPayment
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/MerchantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+            examples:
+              basic:
+                summary: Basic payment
+                value:
+                  cardNumber: "4532015112830366"
+                  expiryMonth: 12
+                  expiryYear: 2025
+                  cvv: "123"
+                  amount: 100.00
+                  currency: "USD"
+                  description: "Order #12345"
+              withBilling:
+                summary: Payment with billing address
+                value:
+                  cardNumber: "4532015112830366"
+                  expiryMonth: 12
+                  expiryYear: 2025
+                  cvv: "123"
+                  amount: 250.50
+                  currency: "USD"
+                  description: "Premium subscription"
+                  billingStreet: "123 Main St"
+                  billingCity: "New York"
+                  billingState: "NY"
+                  billingZip: "10001"
+                  billingCountry: "US"
+      responses:
+        '201':
+          description: Payment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /payments/{paymentId}:
+    get:
+      tags:
+        - Payments
+      summary: Get payment details
+      description: Retrieves the current status and details of a payment
+      operationId: getPayment
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PaymentId'
+      responses:
+        '200':
+          description: Payment details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /payments/{paymentId}/capture:
+    post:
+      tags:
+        - Payments
+      summary: Capture an authorized payment
+      description: |
+        Captures a previously authorized payment. This transfers funds from the
+        cardholder's account. Can only be performed on payments with AUTHORIZED status.
+      operationId: capturePayment
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PaymentId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CaptureRequest'
+      responses:
+        '200':
+          description: Payment captured successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '400':
+          description: Payment cannot be captured (invalid state)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /payments/{paymentId}/void:
+    post:
+      tags:
+        - Payments
+      summary: Void an authorized payment
+      description: |
+        Voids a previously authorized payment, releasing the hold on the
+        cardholder's funds. Can only be performed on payments with AUTHORIZED status.
+      operationId: voidPayment
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PaymentId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Payment voided successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '400':
+          description: Payment cannot be voided (invalid state)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /refunds:
+    post:
+      tags:
+        - Refunds
+      summary: Create a refund
+      description: |
+        Creates a refund for a captured payment. Supports both full and partial refunds.
+        The refund amount cannot exceed the original payment amount minus any previous refunds.
+      operationId: createRefund
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/MerchantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefundRequest'
+      responses:
+        '201':
+          description: Refund created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefundResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          description: Refund amount exceeds available balance
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /refunds/{refundId}:
+    get:
+      tags:
+        - Refunds
+      summary: Get refund details
+      operationId: getRefund
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: refundId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^ref_[A-Za-z0-9]{24}$'
+      responses:
+        '200':
+          description: Refund details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefundResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /transactions:
+    get:
+      tags:
+        - Transactions
+      summary: Query transactions
+      description: |
+        Search and filter transactions with pagination support.
+        Results are cached for improved performance.
+      operationId: queryTransactions
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/PaymentStatus'
+        - name: currency
+          in: query
+          schema:
+            type: string
+            pattern: '^[A-Z]{3}$'
+        - name: minAmount
+          in: query
+          schema:
+            type: number
+            format: decimal
+        - name: maxAmount
+          in: query
+          schema:
+            type: number
+            format: decimal
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: cardLastFour
+          in: query
+          schema:
+            type: string
+            pattern: '^[0-9]{4}$'
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [createdAt, amount, status]
+            default: createdAt
+        - name: sortDirection
+          in: query
+          schema:
+            type: string
+            enum: [ASC, DESC]
+            default: DESC
+      responses:
+        '200':
+          description: Transaction list retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionQueryResponse'
+
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Returns the health status of the service and its dependencies
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Service is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: Merchant API key (format pk_live_xxx or pk_test_xxx)
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: OAuth 2.0 JWT token
+
+  parameters:
+    PaymentId:
+      name: paymentId
+      in: path
+      required: true
+      description: Unique payment identifier
+      schema:
+        type: string
+        pattern: '^pay_[A-Za-z0-9]{24}$'
+        example: pay_abc123def456ghi789jkl012
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: Unique key for idempotent requests (valid for 24 hours)
+      schema:
+        type: string
+        maxLength: 64
+        example: "order-12345-attempt-1"
+    MerchantId:
+      name: X-Merchant-Id
+      in: header
+      required: true
+      description: Merchant UUID
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    PaymentRequest:
+      type: object
+      required:
+        - cardNumber
+        - expiryMonth
+        - expiryYear
+        - cvv
+        - amount
+        - currency
+      properties:
+        cardNumber:
+          type: string
+          pattern: '^[0-9]{13,19}$'
+          description: Card number (PAN) - will be tokenized immediately
+          example: "4532015112830366"
+        expiryMonth:
+          type: integer
+          minimum: 1
+          maximum: 12
+          description: Card expiry month
+          example: 12
+        expiryYear:
+          type: integer
+          minimum: 2025
+          description: Card expiry year (4 digits)
+          example: 2025
+        cvv:
+          type: string
+          pattern: '^[0-9]{3,4}$'
+          description: Card verification value (never stored)
+          example: "123"
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.01
+          maximum: 999999.99
+          description: Payment amount
+          example: 100.00
+        currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+          description: ISO 4217 currency code
+          example: "USD"
+        description:
+          type: string
+          maxLength: 255
+          description: Payment description
+        referenceId:
+          type: string
+          maxLength: 100
+          description: Merchant reference ID
+        billingStreet:
+          type: string
+          maxLength: 255
+        billingCity:
+          type: string
+          maxLength: 100
+        billingState:
+          type: string
+          maxLength: 100
+        billingZip:
+          type: string
+          maxLength: 20
+        billingCountry:
+          type: string
+          pattern: '^[A-Z]{2}$'
+          description: ISO 3166-1 alpha-2 country code
+
+    PaymentResponse:
+      type: object
+      properties:
+        paymentId:
+          type: string
+          pattern: '^pay_[A-Za-z0-9]{24}$'
+          example: pay_abc123def456ghi789jkl012
+        status:
+          $ref: '#/components/schemas/PaymentStatus'
+        amount:
+          type: number
+          format: decimal
+          example: 100.00
+        currency:
+          type: string
+          example: "USD"
+        cardLastFour:
+          type: string
+          pattern: '^[0-9]{4}$'
+          description: Last 4 digits of card (masked)
+          example: "0366"
+        cardBrand:
+          $ref: '#/components/schemas/CardBrand'
+        createdAt:
+          type: string
+          format: date-time
+        authorizedAt:
+          type: string
+          format: date-time
+        errorCode:
+          type: string
+          description: Error code if payment failed
+        errorMessage:
+          type: string
+          description: Human-readable error message
+
+    CaptureRequest:
+      type: object
+      properties:
+        amount:
+          type: number
+          format: decimal
+          description: Amount to capture (defaults to full authorized amount)
+
+    RefundRequest:
+      type: object
+      required:
+        - paymentId
+        - amount
+      properties:
+        paymentId:
+          type: string
+          pattern: '^pay_[A-Za-z0-9]{24}$'
+          description: ID of the payment to refund
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.01
+          description: Refund amount
+        reason:
+          type: string
+          maxLength: 255
+          description: Reason for refund
+
+    RefundResponse:
+      type: object
+      properties:
+        refundId:
+          type: string
+          pattern: '^ref_[A-Za-z0-9]{24}$'
+        paymentId:
+          type: string
+        status:
+          $ref: '#/components/schemas/RefundStatus'
+        amount:
+          type: number
+          format: decimal
+        currency:
+          type: string
+        reason:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        processedAt:
+          type: string
+          format: date-time
+        errorCode:
+          type: string
+        errorMessage:
+          type: string
+
+    TransactionQueryResponse:
+      type: object
+      properties:
+        transactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentResponse'
+        page:
+          type: integer
+        size:
+          type: integer
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+        hasNext:
+          type: boolean
+        hasPrevious:
+          type: boolean
+
+    PaymentStatus:
+      type: string
+      enum:
+        - PENDING
+        - AUTHORIZED
+        - CAPTURED
+        - SETTLED
+        - FAILED
+        - CANCELLED
+        - REFUNDED
+
+    RefundStatus:
+      type: string
+      enum:
+        - PENDING
+        - PROCESSING
+        - COMPLETED
+        - FAILED
+
+    CardBrand:
+      type: string
+      enum:
+        - VISA
+        - MASTERCARD
+        - AMEX
+        - DISCOVER
+        - JCB
+        - DINERS
+        - UNIONPAY
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error type
+        message:
+          type: string
+          description: Human-readable error message
+        code:
+          type: string
+          description: Machine-readable error code
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+        traceId:
+          type: string
+          description: Trace ID for debugging
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [UP, DOWN, DEGRADED]
+        components:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              status:
+                type: string
+              details:
+                type: object
+
+  responses:
+    BadRequest:
+      description: Bad request - invalid input
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Unauthorized - invalid or missing credentials
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    RateLimited:
+      description: Rate limit exceeded
+      headers:
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+        X-RateLimit-Reset:
+          schema:
+            type: integer
+        Retry-After:
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

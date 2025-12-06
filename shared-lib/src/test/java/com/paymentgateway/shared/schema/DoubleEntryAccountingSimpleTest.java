@@ -64,9 +64,8 @@ class DoubleEntryAccountingSimpleTest {
     @Property(tries = 100)
     void settlementBatchBalances(
             @ForAll @BigRange(min = "100.00", max = "50000.00") BigDecimal batchTotal,
-            @ForAll @net.jqwik.api.constraints.Positive int transactionCount
+            @ForAll @net.jqwik.api.constraints.IntRange(min = 1, max = 10) int transactionCount
     ) {
-        Assume.that(transactionCount >= 1 && transactionCount <= 10);
 
         // Distribute batch total across transactions
         BigDecimal amountPerTransaction = batchTotal.divide(

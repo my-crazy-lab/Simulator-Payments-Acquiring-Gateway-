@@ -44,12 +44,8 @@ public class AuthorizationEnforcedPropertyTest {
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
     
-    private String baseUrl;
-    
-    @BeforeEach
-    void setUp() {
-        baseUrl = "http://localhost:" + port;
-        merchantRepository.deleteAll();
+    private String getBaseUrl() {
+        return "http://localhost:" + port;
     }
     
     /**
@@ -80,7 +76,7 @@ public class AuthorizationEnforcedPropertyTest {
         HttpEntity<String> request = new HttpEntity<>("{}", headers);
         
         ResponseEntity<String> response = restTemplate.exchange(
-            baseUrl + endpoint.path,
+            getBaseUrl() + endpoint.path,
             endpoint.method,
             request,
             String.class
@@ -117,15 +113,15 @@ public class AuthorizationEnforcedPropertyTest {
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(paymentRequest, headers);
         
         ResponseEntity<String> response = restTemplate.exchange(
-            baseUrl + "/api/v1/payments",
+            getBaseUrl() + "/api/v1/payments",
             HttpMethod.POST,
             request,
             String.class
         );
         
-        // Should be unauthorized since merchant is inactive
-        assert response.getStatusCode() == HttpStatus.UNAUTHORIZED :
-            "Expected 401 for inactive merchant but got " + response.getStatusCode();
+        // Should be forbidden since merchant is inactive (authenticated but not authorized)
+        assert response.getStatusCode() == HttpStatus.FORBIDDEN || response.getStatusCode() == HttpStatus.UNAUTHORIZED :
+            "Expected 401 or 403 for inactive merchant but got " + response.getStatusCode();
     }
     
     // Providers

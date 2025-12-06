@@ -5,6 +5,7 @@ import com.paymentgateway.authorization.audit.AuditLogService;
 import com.paymentgateway.authorization.domain.PaymentEvent;
 import com.paymentgateway.authorization.repository.PaymentEventRepository;
 import net.jqwik.api.*;
+import net.jqwik.spring.JqwikSpringSupport;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -24,6 +25,7 @@ import java.util.UUID;
  * 
  * Validates: Requirements 8.1
  */
+@JqwikSpringSupport
 @SpringBootTest
 @ActiveProfiles("test")
 class AuditLogImmutabilityPropertyTest {

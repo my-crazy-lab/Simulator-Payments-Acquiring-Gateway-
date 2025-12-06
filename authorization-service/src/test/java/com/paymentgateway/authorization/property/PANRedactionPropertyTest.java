@@ -5,6 +5,7 @@ import com.paymentgateway.authorization.audit.AuditLogService;
 import com.paymentgateway.authorization.domain.PaymentEvent;
 import com.paymentgateway.authorization.repository.PaymentEventRepository;
 import net.jqwik.api.*;
+import net.jqwik.spring.JqwikSpringSupport;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -22,6 +23,7 @@ import java.util.regex.Pattern;
  * 
  * Validates: Requirements 8.3
  */
+@JqwikSpringSupport
 @SpringBootTest
 @ActiveProfiles("test")
 class PANRedactionPropertyTest {
