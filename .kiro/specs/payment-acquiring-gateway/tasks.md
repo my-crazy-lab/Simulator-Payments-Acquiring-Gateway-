@@ -221,7 +221,7 @@
 - [x] 10. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [-] 11. Implement Retry Engine (Rust)
+- [x] 11. Implement Retry Engine (Rust)
   - Create gRPC service definition for retry operations
   - Implement exponential backoff algorithm with jitter
   - Create circuit breaker pattern implementation
@@ -231,24 +231,24 @@
   - Store circuit breaker state in Redis
   - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
 
-- [ ] 11.1 Write property test for exponential backoff timing
+- [x] 11.1 Write property test for exponential backoff timing
   - **Property 17: Exponential Backoff Timing**
   - **Validates: Requirements 9.1**
 
-- [ ] 11.2 Write property test for circuit breaker threshold
+- [x] 11.2 Write property test for circuit breaker threshold
   - **Property 18: Circuit Breaker Opens on Threshold**
   - **Validates: Requirements 9.2**
 
-- [ ] 11.3 Write property test for DLQ after max retries
+- [x] 11.3 Write property test for DLQ after max retries
   - **Property 19: DLQ After Max Retries**
   - **Validates: Requirements 9.5**
 
-- [ ] 11.4 Write unit tests for retry scenarios
+- [x] 11.4 Write unit tests for retry scenarios
   - Test retry exhaustion
   - Test circuit breaker state transitions
   - Test jitter calculation
 
-- [ ] 12. Implement idempotency management
+- [x] 12. Implement idempotency management
   - Create idempotency key storage in Redis
   - Implement idempotency key validation
   - Add distributed locking for concurrent requests
@@ -256,20 +256,20 @@
   - Add idempotency key expiration (24 hours)
   - _Requirements: 21.1, 21.2, 21.3, 21.4, 21.5_
 
-- [ ] 12.1 Write property test for idempotency key deduplication
+- [x] 12.1 Write property test for idempotency key deduplication
   - **Property 30: Idempotency Key Deduplication**
   - **Validates: Requirements 21.2**
 
-- [ ] 12.2 Write property test for concurrent idempotency protection
+- [x] 12.2 Write property test for concurrent idempotency protection
   - **Property 31: Concurrent Idempotency Protection**
   - **Validates: Requirements 21.4**
 
-- [ ] 12.3 Write unit tests for idempotency edge cases
+- [x] 12.3 Write unit tests for idempotency edge cases
   - Test expired keys
   - Test concurrent access
   - Test key collision
 
-- [ ] 13. Implement refund processing
+- [x] 13. Implement refund processing
   - Create refund request endpoint (POST /api/v1/refunds)
   - Implement refund validation logic
   - Add refund amount constraint checking
@@ -279,11 +279,11 @@
   - Store refunds in database
   - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
 
-- [ ] 13.1 Write property test for refund amount constraint
+- [x] 13.1 Write property test for refund amount constraint
   - **Property 14: Refund Amount Constraint**
   - **Validates: Requirements 7.2**
 
-- [ ] 13.2 Write unit tests for refund scenarios
+- [x] 13.2 Write unit tests for refund scenarios
   - Test partial refunds
   - Test full refunds
   - Test refund failures
@@ -310,7 +310,7 @@
   - Test log queries
   - Test access control
 
-- [-] 15. Implement Kafka event publishing and consuming
+- [ ] 15. Implement Kafka event publishing and consuming
   - Create Kafka producer configuration
   - Implement event publishing for payment state changes
   - Create event schemas and register with Schema Registry
@@ -337,7 +337,7 @@
   - Test event consumption
   - Test error handling
 
-- [-] 16. Implement Settlement Service (Java)
+- [ ] 16. Implement Settlement Service (Java)
   - Create Spring Boot application with scheduled jobs
   - Implement settlement batch creation logic
   - Create settlement file generation

@@ -1,0 +1,9 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 110e54d86c095f3cbf05c1f8eb6213987725bee5d4be78821aefc3e3f5e0ab7b # shrinks to initial_delay = 286, max_delay = 10000, multiplier = 1.7427800183431776, max_attempts = 6
+cc 2ca7379825b42efd7551d483583c7dce5dd075196ae86dd21264d5b24d889d4d # shrinks to initial_delay = 194, max_delay = 7837, multiplier = 2.2814472583511356, attempt = 6
+cc 2d8dfae7856444ab561ed9fb00e0992e1ddd643b7f70db356418f14d788d8f2e # shrinks to initial_delay = 2591, max_delay = 22734, multiplier = 2.962162752011065, max_attempts = 4

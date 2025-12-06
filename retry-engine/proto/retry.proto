@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package retry;
+
+service RetryEngine {
+  rpc ScheduleRetry(RetryRequest) returns (RetryResponse);
+  rpc GetCircuitStatus(CircuitRequest) returns (CircuitResponse);
+  rpc GetRetryStatus(RetryStatusRequest) returns (RetryStatusResponse);
+}
+
+message RetryRequest {
+  string transaction_id = 1;
+  string psp_name = 2;
+  bytes payload = 3;
+  int32 attempt_number = 4;
+  string operation_type = 5;
+}
+
+message RetryResponse {
+  string retry_id = 1;
+  bool scheduled = 2;
+  int64 next_retry_at_ms = 3;
+  string message = 4;
+}
+
+message CircuitRequest {
+  string psp_name = 1;
+}
+
+message CircuitResponse {
+  string psp_name = 1;
+  CircuitState state = 2;
+  int32 failure_count = 3;
+  int32 success_count = 4;
+  int64 last_failure_at_ms = 5;
+  int64 next_attempt_at_ms = 6;
+}
+
+enum CircuitState {
+  CLOSED = 0;
+  OPEN = 1;
+  HALF_OPEN = 2;
+}
+
+message RetryStatusRequest {
+  string transaction_id = 1;
+}
+
+message RetryStatusResponse {
+  string transaction_id = 1;
+  int32 attempt_count = 2;
+  string status = 3;
+  string last_error = 4;
+  bool in_dlq = 5;
+}

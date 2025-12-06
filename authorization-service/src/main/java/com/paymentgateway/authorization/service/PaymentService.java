@@ -3,6 +3,7 @@ package com.paymentgateway.authorization.service;
 import com.paymentgateway.authorization.domain.*;
 import com.paymentgateway.authorization.dto.PaymentRequest;
 import com.paymentgateway.authorization.dto.PaymentResponse;
+import com.paymentgateway.authorization.idempotency.IdempotencyService;
 import com.paymentgateway.authorization.psp.*;
 import com.paymentgateway.authorization.repository.PaymentEventRepository;
 import com.paymentgateway.authorization.repository.PaymentRepository;
@@ -26,19 +27,57 @@ public class PaymentService {
     private final PaymentEventRepository paymentEventRepository;
     private final PSPRoutingService pspRoutingService;
     private final Tracer tracer;
+    private final IdempotencyService idempotencyService;
     
     public PaymentService(PaymentRepository paymentRepository,
                          PaymentEventRepository paymentEventRepository,
                          PSPRoutingService pspRoutingService,
-                         Tracer tracer) {
+                         Tracer tracer,
+                         IdempotencyService idempotencyService) {
         this.paymentRepository = paymentRepository;
         this.paymentEventRepository = paymentEventRepository;
         this.pspRoutingService = pspRoutingService;
         this.tracer = tracer;
+        this.idempotencyService = idempotencyService;
     }
     
     @Transactional
-    public PaymentResponse processPayment(PaymentRequest request, UUID merchantId) {
+    public PaymentResponse processPayment(PaymentRequest request, UUID merchantId, String idempotencyKey) {
+        // Check for existing result if idempotency key is provided
+        if (idempotencyKey != null && !idempotencyKey.isBlank()) {
+            PaymentResponse existingResult = idempotencyService.getExistingResult(idempotencyKey, PaymentResponse.class);
+            if (existingResult != null) {
+                logger.info("Returning cached payment result for idempotency key: {}", idempotencyKey);
+                return existingResult;
+            }
+            
+            // Acquire distributed lock to prevent concurrent processing
+            if (!idempotencyService.acquireLock(idempotencyKey)) {
+                // Check again for result (another thread may have completed while we waited)
+                existingResult = idempotencyService.getExistingResult(idempotencyKey, PaymentResponse.class);
+                if (existingResult != null) {
+                    logger.info("Returning cached payment result after lock wait for idempotency key: {}", idempotencyKey);
+                    return existingResult;
+                }
+                throw new RuntimeException("Failed to acquire lock for idempotency key: " + idempotencyKey);
+            }
+            
+            try {
+                PaymentResponse response = processPaymentInternal(request, merchantId);
+                // Store result atomically with idempotency key
+                idempotencyService.storeResult(idempotencyKey, response);
+                return response;
+            } finally {
+                idempotencyService.releaseLock(idempotencyKey);
+            }
+        }
+        
+        // No idempotency key provided, process normally
+        return processPaymentInternal(request, merchantId);
+    }
+    
+    @Transactional
+    private PaymentResponse processPaymentInternal(PaymentRequest request, UUID merchantId) {
         long startTime = System.currentTimeMillis();
         
         // Create distributed trace span
@@ -136,6 +175,11 @@ public class PaymentService {
         } finally {
             span.end();
         }
+    }
+    
+    @Transactional
+    public PaymentResponse processPayment(PaymentRequest request, UUID merchantId) {
+        return processPayment(request, merchantId, null);
     }
     
     public PaymentResponse getPayment(String paymentId) {

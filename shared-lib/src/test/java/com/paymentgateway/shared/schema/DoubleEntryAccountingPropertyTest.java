@@ -3,7 +3,7 @@ package com.paymentgateway.shared.schema;
 import net.jqwik.api.*;
 import net.jqwik.api.constraints.BigRange;
 import net.jqwik.api.constraints.Positive;
-import org.junit.jupiter.api.BeforeAll;
+import net.jqwik.api.lifecycle.BeforeContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -36,8 +36,9 @@ class DoubleEntryAccountingPropertyTest {
 
     private static Connection connection;
 
-    @BeforeAll
+    @BeforeContainer
     static void setUp() throws SQLException {
+        postgres.start();
         connection = DriverManager.getConnection(
                 postgres.getJdbcUrl(),
                 postgres.getUsername(),

@@ -2,7 +2,10 @@ package com.paymentgateway.authorization.controller;
 
 import com.paymentgateway.authorization.dto.PaymentRequest;
 import com.paymentgateway.authorization.dto.PaymentResponse;
+import com.paymentgateway.authorization.dto.RefundRequest;
+import com.paymentgateway.authorization.dto.RefundResponse;
 import com.paymentgateway.authorization.service.PaymentService;
+import com.paymentgateway.authorization.service.RefundService;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -18,11 +21,15 @@ import java.util.UUID;
 public class PaymentController {
     
     private final PaymentService paymentService;
+    private final RefundService refundService;
     private final Counter paymentCounter;
     private final Timer paymentTimer;
     
-    public PaymentController(PaymentService paymentService, MeterRegistry meterRegistry) {
+    public PaymentController(PaymentService paymentService, 
+                           RefundService refundService,
+                           MeterRegistry meterRegistry) {
         this.paymentService = paymentService;
+        this.refundService = refundService;
         this.paymentCounter = Counter.builder("payments.processed")
             .description("Total number of payments processed")
             .register(meterRegistry);
@@ -34,10 +41,11 @@ public class PaymentController {
     @PostMapping("/payments")
     public ResponseEntity<PaymentResponse> createPayment(
             @Valid @RequestBody PaymentRequest request,
-            @RequestAttribute("merchant") com.paymentgateway.authorization.domain.Merchant merchant) {
+            @RequestAttribute("merchant") com.paymentgateway.authorization.domain.Merchant merchant,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         
         return paymentTimer.record(() -> {
-            PaymentResponse response = paymentService.processPayment(request, merchant.getId());
+            PaymentResponse response = paymentService.processPayment(request, merchant.getId(), idempotencyKey);
             paymentCounter.increment();
             
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -59,6 +67,21 @@ public class PaymentController {
     @PostMapping("/payments/{id}/void")
     public ResponseEntity<PaymentResponse> voidPayment(@PathVariable("id") String paymentId) {
         PaymentResponse response = paymentService.voidPayment(paymentId);
+        return ResponseEntity.ok(response);
+    }
+    
+    @PostMapping("/refunds")
+    public ResponseEntity<RefundResponse> createRefund(
+            @Valid @RequestBody RefundRequest request,
+            @RequestAttribute("merchant") com.paymentgateway.authorization.domain.Merchant merchant) {
+        
+        RefundResponse response = refundService.processRefund(request, merchant.getId());
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+    
+    @GetMapping("/refunds/{id}")
+    public ResponseEntity<RefundResponse> getRefund(@PathVariable("id") String refundId) {
+        RefundResponse response = refundService.getRefund(refundId);
         return ResponseEntity.ok(response);
     }
 }

@@ -19,7 +19,9 @@ import java.util.HashMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 class FraudDetectionServiceTest {
@@ -46,8 +48,8 @@ class FraudDetectionServiceTest {
     
     @BeforeEach
     void setUp() {
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(fraudRuleRepository.findByEnabledTrueOrderByPriorityAsc()).thenReturn(Collections.emptyList());
+        lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        lenient().when(fraudRuleRepository.findByEnabledTrueOrderByPriorityAsc()).thenReturn(Collections.emptyList());
         
         velocityCheckService = new VelocityCheckService(redisTemplate);
         geolocationService = new GeolocationService();
@@ -81,7 +83,9 @@ class FraudDetectionServiceTest {
     void shouldBlockBlacklistedIP() {
         // Given
         FraudEvaluationRequest request = createValidRequest();
-        when(blacklistRepository.existsByEntryTypeAndValue("IP", request.getIpAddress())).thenReturn(true);
+        lenient().when(blacklistRepository.existsByEntryTypeAndValue(eq("IP"), eq(request.getIpAddress()))).thenReturn(true);
+        lenient().when(blacklistRepository.existsByEntryTypeAndValue(eq("DEVICE_FINGERPRINT"), anyString())).thenReturn(false);
+        lenient().when(blacklistRepository.existsByEntryTypeAndValue(eq("CARD_HASH"), anyString())).thenReturn(false);
         
         // When
         FraudEvaluationResult result = fraudDetectionService.evaluateTransaction(request);
@@ -97,8 +101,10 @@ class FraudDetectionServiceTest {
     void shouldBlockBlacklistedDeviceFingerprint() {
         // Given
         FraudEvaluationRequest request = createValidRequest();
-        when(blacklistRepository.existsByEntryTypeAndValue("DEVICE_FINGERPRINT", request.getDeviceFingerprint()))
+        lenient().when(blacklistRepository.existsByEntryTypeAndValue(eq("IP"), anyString())).thenReturn(false);
+        lenient().when(blacklistRepository.existsByEntryTypeAndValue(eq("DEVICE_FINGERPRINT"), eq(request.getDeviceFingerprint())))
             .thenReturn(true);
+        lenient().when(blacklistRepository.existsByEntryTypeAndValue(eq("CARD_HASH"), anyString())).thenReturn(false);
         
         // When
         FraudEvaluationResult result = fraudDetectionService.evaluateTransaction(request);
@@ -113,7 +119,9 @@ class FraudDetectionServiceTest {
     void shouldBlockBlacklistedCardHash() {
         // Given
         FraudEvaluationRequest request = createValidRequest();
-        when(blacklistRepository.existsByEntryTypeAndValue("CARD_HASH", request.getCardToken())).thenReturn(true);
+        lenient().when(blacklistRepository.existsByEntryTypeAndValue(eq("IP"), anyString())).thenReturn(false);
+        lenient().when(blacklistRepository.existsByEntryTypeAndValue(eq("DEVICE_FINGERPRINT"), anyString())).thenReturn(false);
+        lenient().when(blacklistRepository.existsByEntryTypeAndValue(eq("CARD_HASH"), eq(request.getCardToken()))).thenReturn(true);
         
         // When
         FraudEvaluationResult result = fraudDetectionService.evaluateTransaction(request);
