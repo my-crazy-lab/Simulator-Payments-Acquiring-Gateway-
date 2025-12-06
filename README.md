@@ -34,53 +34,6 @@ The system consists of multiple services written in different languages:
 - **Prometheus** - Metrics collection
 - **Grafana** - Metrics visualization
 
-## Getting Started
-
-### Prerequisites
-- Java 17+
-- Go 1.21+
-- Rust 1.70+
-- Docker & Docker Compose
-- Maven 3.8+
-
-### Start Infrastructure
-
-```bash
-# Start all infrastructure services
-docker-compose up -d
-
-# Verify services are healthy
-docker-compose ps
-```
-
-### Build Services
-
-```bash
-# Build Java services
-mvn clean install
-
-# Build Go services
-cd tokenization-service && go build
-cd ../hsm-simulator && go build
-
-# Build Rust service
-cd retry-engine && cargo build
-```
-
-### Run Tests
-
-```bash
-# Run all Java tests including property-based tests
-mvn test
-
-# Run Go tests
-cd tokenization-service && go test ./...
-cd ../hsm-simulator && go test ./...
-
-# Run Rust tests
-cd retry-engine && cargo test
-```
-
 ## Project Structure
 
 ```
@@ -114,25 +67,6 @@ cd retry-engine && cargo test
 - Audit logging with sensitive data redaction
 - Key rotation with backward compatibility
 
-## Testing Strategy
-
-### Property-Based Testing
-- 100+ iterations per property
-- 40 correctness properties covering all requirements
-- Smart generators for valid input domains
-- Automatic shrinking to minimal failing cases
-
-### Unit Testing
-- Specific edge cases and error conditions
-- Mock external dependencies
-- Integration points validation
-
-### Integration Testing
-- End-to-end payment flows
-- Testcontainers for infrastructure
-- Kafka event flows
-- Database transactions
-
 ## Monitoring
 
 ### Metrics (Prometheus)
@@ -159,32 +93,85 @@ cd retry-engine && cargo test
 - `POST /api/v1/payments/{id}/capture` - Capture authorization
 - `POST /api/v1/refunds` - Process refund
 
-## Development
+## Core Features
 
-### Environment Variables
-```bash
-# Database
-DATABASE_URL=jdbc:postgresql://localhost:5432/payment_gateway
-DATABASE_USER=payments_user
-DATABASE_PASSWORD=payments_pass
+### Functinal
 
-# Redis
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=redis_pass
+- **PCI DSS Compliance**: Secure card data handling with tokenization
+- **Card Tokenization**: PAN tokenization with format-preserving encryption
+- **Fraud Detection**: Real-time ML-based fraud scoring
+- **3D Secure Flow**: Complete 3DS 2.0 authentication workflow
+- **Multi-PSP Routing**: Intelligent routing to multiple payment providers
+- **Settlement Processing**: Automated settlement with reconciliation
+- **Dispute Management**: Chargeback and dispute handling workflow
+- **Retry Logic**: Exponential backoff with circuit breaker patterns
+- **HSM Integration**: Hardware Security Module simulation
 
-# Kafka
-KAFKA_BOOTSTRAP_SERVERS=localhost:9093
-SCHEMA_REGISTRY_URL=http://localhost:8081
+### Non Functional
 
-# Vault
-VAULT_ADDR=http://localhost:8200
-VAULT_TOKEN=root-token
+- **Secure Enclaves**: Isolated PCI-compliant tokenization service
+- **Event-Driven Architecture**: Kafka-based async processing
+- **Caching Layer**: Redis for session management and rate limiting
+- **Database Encryption**: Field-level encryption for sensitive data
+- **API Security**: OAuth 2.0, JWT tokens, and API key management
+- **Monitoring**: Real-time fraud alerts and transaction monitoring
 
-# Tracing
-JAEGER_ENDPOINT=http://localhost:14268/api/traces
-```
+## External Integrations
 
-## License
+### Payment Service Providers (PSPs)
 
-Proprietary - All rights reserved
+- **Stripe**: Credit card processing
+- **Adyen**: Global payment processing
+- **Braintree**: PayPal-owned processor
+- **Square**: Point-of-sale integration
+- **Worldpay**: Enterprise payment processing
+
+### Card Schemes
+
+- **Visa**: Visa network integration
+- **Mastercard**: Mastercard network
+- **American Express**: Amex direct integration
+- **Discover**: Discover network
+
+### Acquiring Banks
+
+- **Chase Paymentech**: Bank acquiring services
+- **First Data**: Payment processing
+- **TSYS**: Transaction processing
+- **Elavon**: Merchant services
+
+## Compliance Certifications
+
+- **PCI DSS Level 1**: Highest level of PCI compliance
+- **SOC 2 Type II**: Security and availability controls
+- **ISO 27001**: Information security management
+- **GDPR**: Data privacy compliance
+- **PSD2**: European payment services directive
+
+## Security & Compliance
+
+### PCI DSS Compliance
+
+- **Scope Minimization**: Tokenization reduces PCI scope
+- **Data Encryption**: AES-256 encryption for card data
+- **Access Controls**: Role-based access with MFA
+- **Network Security**: TLS 1.3, network segmentation
+- **Audit Logging**: Comprehensive audit trail
+- **Vulnerability Management**: Regular security scans
+
+### Fraud Prevention
+
+- **Real-time Scoring**: ML-based fraud detection
+- **Velocity Checks**: Transaction frequency limits
+- **Geolocation Analysis**: Location-based risk assessment
+- **Device Fingerprinting**: Device-based fraud detection
+- **Behavioral Analysis**: User behavior pattern analysis
+- **Blacklist Management**: Dynamic blacklist updates
+
+### 3D Secure 2.0
+
+- **Frictionless Flow**: Risk-based authentication
+- **Challenge Flow**: Step-up authentication when needed
+- **Browser Integration**: Seamless browser experience
+- **Mobile SDK**: Native mobile app integration
+- **Issuer Integration**: Real-time issuer communication

@@ -15,6 +15,9 @@
 
     <modules>
         <module>shared-lib</module>
+        <module>authorization-service</module>
+        <module>fraud-detection-service</module>
+        <module>threeds-service</module>
     </modules>
 
     <properties>

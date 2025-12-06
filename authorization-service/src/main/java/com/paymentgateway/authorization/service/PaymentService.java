@@ -3,6 +3,7 @@ package com.paymentgateway.authorization.service;
 import com.paymentgateway.authorization.domain.*;
 import com.paymentgateway.authorization.dto.PaymentRequest;
 import com.paymentgateway.authorization.dto.PaymentResponse;
+import com.paymentgateway.authorization.psp.*;
 import com.paymentgateway.authorization.repository.PaymentEventRepository;
 import com.paymentgateway.authorization.repository.PaymentRepository;
 import io.opentelemetry.api.trace.Span;
@@ -23,13 +24,16 @@ public class PaymentService {
     
     private final PaymentRepository paymentRepository;
     private final PaymentEventRepository paymentEventRepository;
+    private final PSPRoutingService pspRoutingService;
     private final Tracer tracer;
     
     public PaymentService(PaymentRepository paymentRepository,
                          PaymentEventRepository paymentEventRepository,
+                         PSPRoutingService pspRoutingService,
                          Tracer tracer) {
         this.paymentRepository = paymentRepository;
         this.paymentEventRepository = paymentEventRepository;
+        this.pspRoutingService = pspRoutingService;
         this.tracer = tracer;
     }
     
@@ -78,12 +82,22 @@ public class PaymentService {
             payment.setThreeDsStatus(ThreeDSStatus.NOT_ENROLLED);
             span.addEvent("3ds_check_complete");
             
-            // Step 4: PSP Authorization (simulated)
+            // Step 4: PSP Authorization (using PSP routing service)
             span.addEvent("psp_authorization_start");
-            payment.setStatus(PaymentStatus.AUTHORIZED);
-            payment.setAuthorizedAt(Instant.now());
-            payment.setPspTransactionId("psp_" + UUID.randomUUID().toString().substring(0, 20));
-            span.addEvent("psp_authorization_complete");
+            PSPAuthorizationRequest pspRequest = buildPSPAuthorizationRequest(payment, request);
+            PSPAuthorizationResponse pspResponse = pspRoutingService.authorizeWithFailover(pspRequest);
+            
+            if (pspResponse.isSuccess()) {
+                payment.setStatus(PaymentStatus.AUTHORIZED);
+                payment.setAuthorizedAt(Instant.now());
+                payment.setPspTransactionId(pspResponse.getPspTransactionId());
+                span.addEvent("psp_authorization_complete");
+            } else {
+                payment.setStatus(PaymentStatus.DECLINED);
+                span.addEvent("psp_authorization_declined");
+                logger.warn("Payment declined: paymentId={}, reason={}", 
+                           paymentId, pspResponse.getDeclineMessage());
+            }
             
             // Calculate processing time
             long processingTime = System.currentTimeMillis() - startTime;
@@ -150,6 +164,18 @@ public class PaymentService {
             throw new RuntimeException("Payment must be in AUTHORIZED status to capture");
         }
         
+        // Call PSP to capture
+        PSPClient pspClient = pspRoutingService.selectPSP(payment.getMerchantId());
+        PSPCaptureResponse pspResponse = pspClient.capture(
+            payment.getPspTransactionId(), 
+            payment.getAmount(), 
+            payment.getCurrency()
+        );
+        
+        if (!pspResponse.isSuccess()) {
+            throw new RuntimeException("PSP capture failed: " + pspResponse.getErrorMessage());
+        }
+        
         payment.setStatus(PaymentStatus.CAPTURED);
         payment.setCapturedAt(Instant.now());
         payment = paymentRepository.save(payment);
@@ -180,6 +206,14 @@ public class PaymentService {
             throw new RuntimeException("Payment must be in AUTHORIZED status to void");
         }
         
+        // Call PSP to void
+        PSPClient pspClient = pspRoutingService.selectPSP(payment.getMerchantId());
+        PSPVoidResponse pspResponse = pspClient.voidTransaction(payment.getPspTransactionId());
+        
+        if (!pspResponse.isSuccess()) {
+            throw new RuntimeException("PSP void failed: " + pspResponse.getErrorMessage());
+        }
+        
         payment.setStatus(PaymentStatus.CANCELLED);
         payment = paymentRepository.save(payment);
         
@@ -203,5 +237,30 @@ public class PaymentService {
     // Simulated tokenization - in real implementation, this would call the tokenization service
     private UUID simulateTokenization(String cardNumber) {
         return UUID.randomUUID();
+    }
+    
+    private PSPAuthorizationRequest buildPSPAuthorizationRequest(Payment payment, PaymentRequest request) {
+        PSPAuthorizationRequest pspRequest = new PSPAuthorizationRequest();
+        pspRequest.setMerchantId(payment.getMerchantId());
+        pspRequest.setAmount(payment.getAmount());
+        pspRequest.setCurrency(payment.getCurrency());
+        pspRequest.setCardTokenId(payment.getCardTokenId());
+        pspRequest.setCardLastFour(payment.getCardLastFour());
+        pspRequest.setCardBrand(payment.getCardBrand() != null ? payment.getCardBrand().name() : null);
+        pspRequest.setDescription(payment.getDescription());
+        pspRequest.setReferenceId(payment.getReferenceId());
+        pspRequest.setBillingStreet(payment.getBillingStreet());
+        pspRequest.setBillingCity(payment.getBillingCity());
+        pspRequest.setBillingState(payment.getBillingState());
+        pspRequest.setBillingZip(payment.getBillingZip());
+        pspRequest.setBillingCountry(payment.getBillingCountry());
+        
+        // Add 3DS data if available
+        if (payment.getThreeDsCavv() != null) {
+            pspRequest.setCavv(payment.getThreeDsCavv());
+            pspRequest.setEci(payment.getThreeDsEci());
+        }
+        
+        return pspRequest;
     }
 }

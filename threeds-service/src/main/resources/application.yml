@@ -1,0 +1,42 @@
+server:
+  port: 8448
+
+spring:
+  application:
+    name: threeds-service
+  
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    timeout: 2000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+
+grpc:
+  server:
+    port: 9093
+    
+threeds:
+  acs:
+    url: ${ACS_URL:http://localhost:8448/acs}
+  transaction:
+    timeout-minutes: 10
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+logging:
+  level:
+    com.paymentgateway.threeds: INFO
+    io.grpc: WARN

@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package fraud;
+
+option java_multiple_files = true;
+option java_package = "com.paymentgateway.fraud.grpc";
+option java_outer_classname = "FraudDetectionProto";
+
+service FraudDetectionService {
+  rpc EvaluateTransaction(FraudRequest) returns (FraudResponse);
+  rpc UpdateRules(RuleUpdateRequest) returns (RuleUpdateResponse);
+  rpc AddToBlacklist(BlacklistRequest) returns (BlacklistResponse);
+  rpc RemoveFromBlacklist(BlacklistRequest) returns (BlacklistResponse);
+}
+
+message FraudRequest {
+  string transaction_id = 1;
+  string amount = 2;
+  string currency = 3;
+  string card_token = 4;
+  string ip_address = 5;
+  string device_fingerprint = 6;
+  Address billing_address = 7;
+  string merchant_id = 8;
+  map<string, string> metadata = 9;
+}
+
+message Address {
+  string street = 1;
+  string city = 2;
+  string state = 3;
+  string postal_code = 4;
+  string country = 5;
+}
+
+message FraudResponse {
+  double fraud_score = 1;
+  FraudStatus status = 2;
+  repeated string triggered_rules = 3;
+  bool require_3ds = 4;
+  string risk_level = 5;
+}
+
+enum FraudStatus {
+  CLEAN = 0;
+  REVIEW = 1;
+  BLOCK = 2;
+}
+
+message RuleUpdateRequest {
+  string rule_id = 1;
+  string rule_name = 2;
+  string rule_condition = 3;
+  int32 priority = 4;
+  bool enabled = 5;
+}
+
+message RuleUpdateResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message BlacklistRequest {
+  string entry_type = 1;  // IP, CARD_HASH, DEVICE_FINGERPRINT
+  string value = 2;
+  string reason = 3;
+}
+
+message BlacklistResponse {
+  bool success = 1;
+  string message = 2;
+}

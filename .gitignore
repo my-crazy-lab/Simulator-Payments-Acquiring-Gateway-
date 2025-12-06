@@ -1,0 +1,109 @@
+########################################
+# Global OS / Editor
+########################################
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+########################################
+# Java
+########################################
+
+# Compiled class files
+*.class
+
+# Log files
+*.log
+
+# BlueJ files
+*.ctxt
+
+# Mobile Tools for Java
+.mtj.tmp/
+
+# Package Files
+*.jar
+*.war
+*.ear
+
+# JVM crash logs
+hs_err_pid*
+replay_pid*
+
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# Gradle
+.gradle/
+build/
+out/
+.gradle-cache/
+
+# Gradle Wrapper
+!gradle/wrapper/gradle-wrapper.jar
+
+########################################
+# Go
+########################################
+
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go build outputs
+bin/
+dist/
+build/
+
+# Go modules (generated)
+vendor/
+
+########################################
+# Rust
+########################################
+
+# Cargo build directory
+target/
+
+# Rust tooling
+**/*.rs.bk
+
+# Rust docs
+doc/
+
+# Custom artifacts
+*.rlib
+*.rmeta
+
+########################################
+# General build artifacts
+########################################
+*.tmp
+*.cache
+*.pid
+*.lock
+
+# Environment
+.env
+.env.*

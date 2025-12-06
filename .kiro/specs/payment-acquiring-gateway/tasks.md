@@ -67,7 +67,7 @@
   - Test expired tokens
   - Test concurrent tokenization requests
 
-- [ ] 4. Implement Authorization Service core (Java)
+- [x] 4. Implement Authorization Service core (Java)
   - Create Spring Boot application with REST API endpoints
   - Implement payment processing endpoint (POST /api/v1/payments)
   - Implement transaction query endpoint (GET /api/v1/payments/{id})
@@ -79,19 +79,19 @@
   - Add Prometheus metrics collection
   - _Requirements: 1.1, 16.1, 16.5_
 
-- [ ] 4.1 Write property test for PAN never stored raw
+- [x] 4.1 Write property test for PAN never stored raw
   - **Property 2: PAN Never Stored Raw**
   - **Validates: Requirements 1.1, 1.3**
 
-- [ ] 4.2 Write property test for service orchestration sequence
+- [x] 4.2 Write property test for service orchestration sequence
   - **Property 39: Service Orchestration Sequence**
   - **Validates: Requirements 16.1**
 
-- [ ] 4.3 Write property test for distributed trace propagation
+- [x] 4.3 Write property test for distributed trace propagation
   - **Property 20: Distributed Trace Propagation**
   - **Validates: Requirements 10.1, 10.2**
 
-- [ ] 4.4 Write unit tests for REST API endpoints
+- [x] 4.4 Write unit tests for REST API endpoints
   - Test request validation
   - Test error responses
   - Test pagination
@@ -105,24 +105,24 @@
   - Create API key management endpoints
   - _Requirements: 13.1, 13.2, 13.3, 13.4, 13.5, 19.1_
 
-- [ ] 5.1 Write property test for authentication required
+- [x] 5.1 Write property test for authentication required
   - **Property 24: Authentication Required**
   - **Validates: Requirements 13.1**
 
-- [ ] 5.2 Write property test for authorization enforced
+- [-] 5.2 Write property test for authorization enforced
   - **Property 25: Authorization Enforced**
   - **Validates: Requirements 13.2**
 
-- [ ] 5.3 Write property test for rate limit enforcement
+- [-] 5.3 Write property test for rate limit enforcement
   - **Property 35: Rate Limit Enforcement**
   - **Validates: Requirements 19.1**
 
-- [ ] 5.4 Write unit tests for authentication edge cases
+- [x] 5.4 Write unit tests for authentication edge cases
   - Test expired tokens
   - Test invalid API keys
   - Test missing credentials
 
-- [ ] 6. Implement input validation and data integrity
+- [x] 6. Implement input validation and data integrity
   - Create request validation framework using Bean Validation
   - Implement Luhn checksum validation for card numbers
   - Add card expiry date validation
@@ -131,20 +131,20 @@
   - Create schema validation for all API requests
   - _Requirements: 18.1, 18.2_
 
-- [ ] 6.1 Write property test for input validation
+- [x] 6.1 Write property test for input validation
   - **Property 36: Input Validation**
   - **Validates: Requirements 18.1**
 
-- [ ] 6.2 Write property test for Luhn checksum
+- [x] 6.2 Write property test for Luhn checksum
   - **Property 37: Luhn Checksum Validation**
   - **Validates: Requirements 18.2**
 
-- [ ] 6.3 Write unit tests for validation edge cases
+- [x] 6.3 Write unit tests for validation edge cases
   - Test boundary values
   - Test invalid formats
   - Test missing required fields
 
-- [ ] 7. Implement Fraud Detection Service (Java)
+- [x] 7. Implement Fraud Detection Service (Java)
   - Create Spring Boot application with gRPC server
   - Implement fraud scoring engine with ML model integration
   - Create velocity check logic using Redis
@@ -155,24 +155,24 @@
   - Store fraud rules and alerts in PostgreSQL
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
-- [ ] 7.1 Write property test for fraud score range
+- [x] 7.1 Write property test for fraud score range
   - **Property 9: Fraud Score Range**
   - **Validates: Requirements 4.1**
 
-- [ ] 7.2 Write property test for high risk triggers 3DS
+- [x] 7.2 Write property test for high risk triggers 3DS
   - **Property 10: High Risk Triggers 3DS**
   - **Validates: Requirements 4.3**
 
-- [ ] 7.3 Write property test for blacklist immediate rejection
+- [x] 7.3 Write property test for blacklist immediate rejection
   - **Property 11: Blacklist Immediate Rejection**
   - **Validates: Requirements 4.5**
 
-- [ ] 7.4 Write unit tests for fraud detection scenarios
+- [x] 7.4 Write unit tests for fraud detection scenarios
   - Test velocity limits
   - Test geolocation scoring
   - Test rule evaluation
 
-- [ ] 8. Implement 3D Secure Service (Java)
+- [x] 8. Implement 3D Secure Service (Java)
   - Create Spring Boot application with gRPC server
   - Implement 3DS 2.0 authentication initiation
   - Create browser redirect flow for challenge authentication
@@ -182,16 +182,16 @@
   - Store 3DS transaction state in Redis
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
 
-- [ ] 8.1 Write property test for 3DS authentication data included
+- [x] 8.1 Write property test for 3DS authentication data included
   - **Property 12: 3DS Authentication Data Included**
   - **Validates: Requirements 5.4**
 
-- [ ] 8.2 Write unit tests for 3DS flows
+- [x] 8.2 Write unit tests for 3DS flows
   - Test frictionless flow
   - Test challenge flow
   - Test authentication timeout
 
-- [ ] 9. Implement PSP integration and routing
+- [x] 9. Implement PSP integration and routing
   - Create PSP client interface
   - Implement Stripe PSP client
   - Implement Adyen PSP client
@@ -201,27 +201,27 @@
   - Store PSP configurations in database
   - _Requirements: 3.1, 3.2, 3.3, 3.4_
 
-- [ ] 9.1 Write property test for PSP routing consistency
+- [x] 9.1 Write property test for PSP routing consistency
   - **Property 6: PSP Routing Consistency**
   - **Validates: Requirements 3.1**
 
-- [ ] 9.2 Write property test for failover on PSP error
+- [x] 9.2 Write property test for failover on PSP error
   - **Property 7: Failover on PSP Error**
   - **Validates: Requirements 3.2**
 
-- [ ] 9.3 Write property test for required PSP fields
+- [x] 9.3 Write property test for required PSP fields
   - **Property 8: Required PSP Fields Present**
   - **Validates: Requirements 3.3**
 
-- [ ] 9.4 Write unit tests for PSP integration
+- [x] 9.4 Write unit tests for PSP integration
   - Test PSP response parsing
   - Test connection timeouts
   - Test error handling
 
-- [ ] 10. Checkpoint - Ensure all tests pass
+- [x] 10. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 11. Implement Retry Engine (Rust)
+- [-] 11. Implement Retry Engine (Rust)
   - Create gRPC service definition for retry operations
   - Implement exponential backoff algorithm with jitter
   - Create circuit breaker pattern implementation
@@ -288,7 +288,7 @@
   - Test full refunds
   - Test refund failures
 
-- [ ] 14. Implement audit logging
+- [-] 14. Implement audit logging
   - Create audit log service
   - Implement immutable audit log storage
   - Add cryptographic integrity verification
@@ -310,7 +310,7 @@
   - Test log queries
   - Test access control
 
-- [ ] 15. Implement Kafka event publishing and consuming
+- [-] 15. Implement Kafka event publishing and consuming
   - Create Kafka producer configuration
   - Implement event publishing for payment state changes
   - Create event schemas and register with Schema Registry
@@ -337,7 +337,7 @@
   - Test event consumption
   - Test error handling
 
-- [ ] 16. Implement Settlement Service (Java)
+- [-] 16. Implement Settlement Service (Java)
   - Create Spring Boot application with scheduled jobs
   - Implement settlement batch creation logic
   - Create settlement file generation
@@ -360,7 +360,7 @@
   - Test reconciliation
   - Test dispute handling
 
-- [ ] 17. Implement transaction query and reporting
+- [-] 17. Implement transaction query and reporting
   - Create transaction query endpoint with filters
   - Implement pagination for large result sets
   - Add caching layer using Redis
@@ -378,7 +378,7 @@
   - Test pagination
   - Test caching
 
-- [ ] 18. Implement webhook delivery system
+- [-] 18. Implement webhook delivery system
   - Create webhook delivery service
   - Implement HMAC signature generation
   - Add webhook retry logic with exponential backoff
@@ -396,7 +396,7 @@
   - Test signature verification
   - Test delivery tracking
 
-- [ ] 19. Implement multi-currency support
+- [-] 19. Implement multi-currency support
   - Create currency conversion service
   - Integrate with exchange rate provider
   - Implement rate caching in Redis
@@ -414,7 +414,7 @@
   - Test conversion accuracy
   - Test fallback behavior
 
-- [ ] 20. Implement TLS and security hardening
+- [-] 20. Implement TLS and security hardening
   - Configure TLS 1.3 for all external endpoints
   - Implement mTLS for internal service communication
   - Add security headers to all responses
@@ -463,7 +463,7 @@
   - Test health checks
   - Test alert triggers
 
-- [ ] 23. Implement graceful degradation
+- [-] 23. Implement graceful degradation
   - Add fallback logic for fraud service unavailability
   - Implement fallback for 3DS service failures
   - Create fallback for cache unavailability

@@ -1,0 +1,79 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.paymentgateway.threeds.grpc";
+option java_outer_classname = "ThreeDSProto";
+
+package threeds;
+
+service ThreeDSecureService {
+  rpc InitiateAuth(ThreeDSRequest) returns (ThreeDSResponse);
+  rpc CompleteAuth(ThreeDSCompleteRequest) returns (ThreeDSCompleteResponse);
+  rpc ValidateAuth(ValidateAuthRequest) returns (ValidateAuthResponse);
+}
+
+message ThreeDSRequest {
+  string transaction_id = 1;
+  string amount = 2;
+  string currency = 3;
+  string card_token = 4;
+  BrowserInfo browser_info = 5;
+  string merchant_return_url = 6;
+  string merchant_id = 7;
+}
+
+message BrowserInfo {
+  string user_agent = 1;
+  string accept_header = 2;
+  string language = 3;
+  int32 screen_width = 4;
+  int32 screen_height = 5;
+  int32 color_depth = 6;
+  string timezone_offset = 7;
+  bool java_enabled = 8;
+  bool javascript_enabled = 9;
+  string ip_address = 10;
+}
+
+message ThreeDSResponse {
+  ThreeDSStatus status = 1;
+  string acs_url = 2;
+  string transaction_id = 3;
+  string cavv = 4;
+  string eci = 5;
+  string xid = 6;
+  string error_message = 7;
+}
+
+message ThreeDSCompleteRequest {
+  string transaction_id = 1;
+  string pares = 2;
+}
+
+message ThreeDSCompleteResponse {
+  ThreeDSStatus status = 1;
+  string cavv = 2;
+  string eci = 3;
+  string xid = 4;
+  string error_message = 5;
+}
+
+message ValidateAuthRequest {
+  string transaction_id = 1;
+}
+
+message ValidateAuthResponse {
+  bool is_authenticated = 1;
+  string cavv = 2;
+  string eci = 3;
+  string xid = 4;
+}
+
+enum ThreeDSStatus {
+  UNKNOWN = 0;
+  FRICTIONLESS = 1;
+  CHALLENGE_REQUIRED = 2;
+  AUTHENTICATED = 3;
+  FAILED = 4;
+  TIMEOUT = 5;
+}
